@@ -1,11 +1,13 @@
 "use client";
 
-import { useReducer } from "react";
+import { useReducer, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Check, CreditCard, User, Calendar } from "lucide-react";
+import { Check, CreditCard, User, Calendar, Loader2 } from "lucide-react";
+import { createBooking } from "@/lib/actions/booking";
 
 type RoomType = {
   id: string;
@@ -212,8 +214,24 @@ function StepConfirm({ state, roomType }: { state: State; roomType: RoomType }) 
         </div>
       </div>
       <p className="text-xs text-muted-foreground text-center">
-        By confirming, you agree to the booking terms. This is a demo — no real reservation will be made.
+        By confirming, you agree to the booking terms.
       </p>
+    </div>
+  );
+}
+
+function StepSuccess() {
+  return (
+    <div className="space-y-6 text-center">
+      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+        <Check className="h-8 w-8 text-primary" />
+      </div>
+      <div className="space-y-2">
+        <h2 className="text-xl font-bold">Booking Confirmed</h2>
+        <p className="text-muted-foreground">
+          Your reservation has been created successfully.
+        </p>
+      </div>
     </div>
   );
 }
@@ -225,6 +243,7 @@ type BookingWizardProps = {
 };
 
 export default function BookingWizard({ roomType, initialCheckIn, initialCheckOut }: BookingWizardProps) {
+  const router = useRouter();
   const [state, dispatch] = useReducer(reducer, {
     step: 0,
     checkIn: initialCheckIn ?? "",
@@ -235,12 +254,33 @@ export default function BookingWizard({ roomType, initialCheckIn, initialCheckOu
     expiry: "",
     cvc: "",
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const canNext =
     (state.step === 0 && state.checkIn && state.checkOut && getNights(state.checkIn, state.checkOut) > 0) ||
     (state.step === 1 && state.name && state.email) ||
     (state.step === 2 && state.cardNumber && state.expiry && state.cvc) ||
     state.step === 3;
+
+  async function handleConfirm() {
+    setLoading(true);
+    setError(null);
+    try {
+      await createBooking({
+        roomTypeId: roomType.id,
+        checkInDate: state.checkIn,
+        checkOutDate: state.checkOut,
+        guestName: state.name,
+        guestEmail: state.email,
+      });
+      dispatch({ type: "NEXT" });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <div className="mx-auto max-w-lg space-y-8">
@@ -253,12 +293,13 @@ export default function BookingWizard({ roomType, initialCheckIn, initialCheckOu
 
       <Card>
         <CardHeader>
-          <CardTitle>{STEPS[state.step].label}</CardTitle>
+          <CardTitle>{state.step < 4 ? STEPS[state.step].label : "Done"}</CardTitle>
           <CardDescription>
             {state.step === 0 && "Select your travel dates"}
             {state.step === 1 && "Provide your contact information"}
             {state.step === 2 && "Enter payment details"}
             {state.step === 3 && "Review and confirm your booking"}
+            {state.step === 4 && "Your booking has been confirmed"}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -266,21 +307,37 @@ export default function BookingWizard({ roomType, initialCheckIn, initialCheckOu
           {state.step === 1 && <StepDetails state={state} dispatch={dispatch} />}
           {state.step === 2 && <StepPayment state={state} dispatch={dispatch} />}
           {state.step === 3 && <StepConfirm state={state} roomType={roomType} />}
+          {state.step === 4 && <StepSuccess />}
+          {error && (
+            <div className="mt-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+              {error}
+            </div>
+          )}
         </CardContent>
         <CardFooter className="flex justify-between">
-          <Button
-            variant="outline"
-            onClick={() => dispatch({ type: "BACK" })}
-            disabled={state.step === 0}
-          >
-            Back
-          </Button>
-          {state.step < 3 ? (
-            <Button onClick={() => dispatch({ type: "NEXT" })} disabled={!canNext}>
-              Continue
-            </Button>
+          {state.step < 4 ? (
+            <>
+              <Button
+                variant="outline"
+                onClick={() => dispatch({ type: "BACK" })}
+                disabled={state.step === 0 || loading}
+              >
+                Back
+              </Button>
+              {state.step < 3 ? (
+                <Button onClick={() => dispatch({ type: "NEXT" })} disabled={!canNext}>
+                  Continue
+                </Button>
+              ) : (
+                <Button onClick={handleConfirm} disabled={loading}>
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirm Booking"}
+                </Button>
+              )}
+            </>
           ) : (
-            <Button disabled>Confirm Booking</Button>
+            <Button className="w-full" onClick={() => router.push("/rooms")}>
+              Browse More Rooms
+            </Button>
           )}
         </CardFooter>
       </Card>
