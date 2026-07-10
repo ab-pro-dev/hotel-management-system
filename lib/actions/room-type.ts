@@ -1,10 +1,9 @@
 "use server";
 
 import { z } from "zod";
-import { PrismaClient, Role } from "@prisma/client";
+import { Role } from "@prisma/client";
 import { auth } from "@/auth";
-
-const prisma = new PrismaClient();
+import prisma from "@/lib/prisma";
 
 const roomTypeSchema = z.object({
   title: z.string().min(1, "Title is required"),
