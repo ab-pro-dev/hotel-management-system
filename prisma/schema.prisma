@@ -64,6 +64,7 @@ model Booking {
   totalPrice      Decimal
   status          BookingStatus    @default(PENDING)
   payment         Payment?
+  review          Review?
   checkInToken    String?          @unique
   serviceRequests ServiceRequest[]
 }
@@ -112,4 +113,13 @@ enum ServiceRequestStatus {
   OPEN
   ACKNOWLEDGED
   RESOLVED
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  booking   Booking  @relation(fields: [bookingId], references: [id])
+  bookingId String   @unique
+  rating    Int
+  comment   String
+  createdAt DateTime @default(now())
 }
