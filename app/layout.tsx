@@ -15,7 +15,7 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Hotel Management System",
+  title: "Grand Raya Hotel",
   description: "Boutique hotel booking and management",
 };
 
