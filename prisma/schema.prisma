@@ -11,3 +11,106 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         Role      @default(GUEST)
+  bookings     Booking[]
+  createdAt    DateTime  @default(now())
+}
+
+enum Role {
+  GUEST
+  RECEPTIONIST
+  HOUSEKEEPER
+  ADMIN
+}
+
+model RoomType {
+  id          String  @id @default(cuid())
+  title       String
+  description String
+  basePrice   Decimal
+  capacity    Int
+  rooms       Room[]
+}
+
+model Room {
+  id         String     @id @default(cuid())
+  roomNumber String     @unique
+  roomType   RoomType   @relation(fields: [roomTypeId], references: [id])
+  roomTypeId String
+  status     RoomStatus @default(AVAILABLE)
+  bookings   Booking[]
+}
+
+enum RoomStatus {
+  AVAILABLE
+  OCCUPIED
+  DIRTY
+  MAINTENANCE
+}
+
+model Booking {
+  id              String           @id @default(cuid())
+  guest           User             @relation(fields: [guestId], references: [id])
+  guestId         String
+  room            Room             @relation(fields: [roomId], references: [id])
+  roomId          String
+  checkInDate     DateTime
+  checkOutDate    DateTime
+  totalPrice      Decimal
+  status          BookingStatus    @default(PENDING)
+  payment         Payment?
+  checkInToken    String?          @unique
+  serviceRequests ServiceRequest[]
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CHECKED_IN
+  CHECKED_OUT
+  CANCELLED
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  booking       Booking       @relation(fields: [bookingId], references: [id])
+  bookingId     String        @unique
+  amount        Decimal
+  paymentMethod String
+  status        PaymentStatus @default(PAID)
+  transactionId String        @unique
+}
+
+enum PaymentStatus {
+  PAID
+  REFUNDED
+  FAILED
+}
+
+model ServiceRequest {
+  id        String               @id @default(cuid())
+  booking   Booking              @relation(fields: [bookingId], references: [id])
+  bookingId String
+  type      ServiceRequestType
+  message   String
+  status    ServiceRequestStatus @default(OPEN)
+  createdAt DateTime             @default(now())
+}
+
+enum ServiceRequestType {
+  HOUSEKEEPING
+  FRONT_DESK
+  MAINTENANCE
+}
+
+enum ServiceRequestStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+}
