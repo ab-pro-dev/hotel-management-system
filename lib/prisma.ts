@@ -5,7 +5,6 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-console.log("DATABASE_URL present:", typeof process.env.DATABASE_URL === "string" && process.env.DATABASE_URL.length > 0);
 
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL,
