@@ -130,3 +130,29 @@ export async function getYieldMetrics(): Promise<YieldMetrics> {
     availableRooms: totalRooms,
   };
 }
+
+export type PopularityPoint = {
+  roomType: string;
+  bookings: number;
+};
+
+export async function getPopularityMatrix(): Promise<PopularityPoint[]> {
+  const roomTypes = await prisma.roomType.findMany({
+    include: {
+      rooms: {
+        select: {
+          _count: {
+            select: { bookings: true },
+          },
+        },
+      },
+    },
+  });
+
+  return roomTypes
+    .map((rt) => ({
+      roomType: rt.title,
+      bookings: rt.rooms.reduce((sum, room) => sum + room._count.bookings, 0),
+    }))
+    .sort((a, b) => b.bookings - a.bookings);
+}

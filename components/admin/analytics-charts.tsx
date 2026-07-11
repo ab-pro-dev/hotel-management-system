@@ -13,6 +13,8 @@ import {
   Pie,
   Cell,
   Legend,
+  BarChart,
+  Bar,
 } from "recharts";
 
 type OccupancyPoint = { date: string; occupancy: number };
@@ -24,6 +26,7 @@ type YieldMetrics = {
   roomsSold: number;
   availableRooms: number;
 };
+type PopularityPoint = { roomType: string; bookings: number };
 
 const PIE_COLORS = ["oklch(0.58 0.08 65)", "oklch(0.52 0.01 55)"];
 
@@ -107,14 +110,37 @@ function MetricCard({ title, value, subtitle }: { title: string; value: string; 
   );
 }
 
+function PopularityChart({ data }: { data: PopularityPoint[] }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Room Type Popularity</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="roomType" tick={{ fontSize: 12 }} />
+            <YAxis tick={{ fontSize: 12 }} />
+            <Tooltip />
+            <Bar dataKey="bookings" fill="oklch(0.58 0.08 65)" radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function AnalyticsCharts({
   occupancy,
   revenue,
   metrics,
+  popularity,
 }: {
   occupancy: OccupancyPoint[];
   revenue: RevenueSource[];
   metrics: YieldMetrics;
+  popularity: PopularityPoint[];
 }) {
   return (
     <div className="space-y-6">
@@ -134,6 +160,7 @@ export default function AnalyticsCharts({
         <OccupancyChart data={occupancy} />
         <RevenueChart data={revenue} />
       </div>
+      <PopularityChart data={popularity} />
     </div>
   );
 }

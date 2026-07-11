@@ -3,6 +3,7 @@ import {
   getOccupancyTrend,
   getRevenueBreakdown,
   getYieldMetrics,
+  getPopularityMatrix,
 } from "@/lib/analytics";
 import AnalyticsCharts from "@/components/admin/analytics-charts";
 
@@ -13,10 +14,11 @@ export const metadata: Metadata = {
 };
 
 export default async function AnalyticsPage() {
-  const [occupancy, revenue, metrics] = await Promise.all([
+  const [occupancy, revenue, metrics, popularity] = await Promise.all([
     getOccupancyTrend(30),
     getRevenueBreakdown(),
     getYieldMetrics(),
+    getPopularityMatrix(),
   ]);
 
   return (
@@ -25,7 +27,12 @@ export default async function AnalyticsPage() {
         <h1 className="text-2xl font-bold">Analytics</h1>
         <p className="text-muted-foreground">Revenue and occupancy insights.</p>
       </div>
-      <AnalyticsCharts occupancy={occupancy} revenue={revenue} metrics={metrics} />
+      <AnalyticsCharts
+        occupancy={occupancy}
+        revenue={revenue}
+        metrics={metrics}
+        popularity={popularity}
+      />
     </div>
   );
 }
