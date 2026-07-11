@@ -131,3 +131,66 @@
     font-family: var(--font-heading);
   }
 }
+
+/* ── Homepage hero animations ───────────────────────── */
+
+@keyframes hero-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes hero-scale {
+  from {
+    transform: scale(1.08);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes hero-line-grow {
+  from {
+    width: 0;
+  }
+  to {
+    width: 3rem;
+  }
+}
+
+/* Apply staggered entrance to hero children */
+section:first-child img {
+  animation: hero-scale 1.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+section:first-child h1 {
+  animation: hero-fade-in 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.3s both;
+}
+
+section:first-child p {
+  animation: hero-fade-in 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s both;
+}
+
+section:first-child a#browse-rooms-cta {
+  animation: hero-fade-in 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.7s both;
+}
+
+/* CTA hover glow */
+a#browse-rooms-cta:hover {
+  border-color: rgba(235, 225, 210, 0.6);
+  background-color: rgba(235, 225, 210, 0.08);
+}
+
+a#explore-rooms-cta {
+  transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Nav link hover */
+header nav a:hover {
+  color: rgba(235, 225, 210, 1) !important;
+}
