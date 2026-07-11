@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ServiceRequestType, ServiceRequestStatus } from "@prisma/client";
+import { useTranslations } from "next-intl";
 import { pusherClient } from "@/lib/pusher-client";
 import { createServiceRequest } from "@/lib/actions/service-request";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,12 +20,6 @@ type ServiceRequest = {
   createdAt: string;
 };
 
-const TYPE_LABELS: Record<ServiceRequestType, string> = {
-  HOUSEKEEPING: "Housekeeping",
-  FRONT_DESK: "Front Desk",
-  MAINTENANCE: "Maintenance",
-};
-
 const STATUS_STYLES: Record<ServiceRequestStatus, string> = {
   OPEN: "bg-amber-100 text-amber-800",
   ACKNOWLEDGED: "bg-blue-100 text-blue-800",
@@ -38,10 +33,17 @@ export default function ServiceRequests({
   bookingId: string;
   initialRequests: ServiceRequest[];
 }) {
+  const t = useTranslations("serviceRequest");
   const [requests, setRequests] = useState<ServiceRequest[]>(initialRequests);
   const [type, setType] = useState<ServiceRequestType>("HOUSEKEEPING");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const TYPE_LABELS: Record<ServiceRequestType, string> = {
+    HOUSEKEEPING: t("housekeeping"),
+    FRONT_DESK: t("frontDesk"),
+    MAINTENANCE: t("maintenance"),
+  };
 
   useEffect(() => {
     const channels = ["housekeeping-requests", "front-desk-requests", "maintenance-requests"];
@@ -82,12 +84,12 @@ export default function ServiceRequests({
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Request Service</CardTitle>
+          <CardTitle className="text-base">{t("requestService")}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="type">Type</Label>
+              <Label htmlFor="type">{t("type")}</Label>
               <select
                 id="type"
                 value={type}
@@ -102,10 +104,10 @@ export default function ServiceRequests({
               </select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="message">Message</Label>
+              <Label htmlFor="message">{t("message")}</Label>
               <Input
                 id="message"
-                placeholder="Describe your request..."
+                placeholder={t("messagePlaceholder")}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 required
@@ -113,7 +115,7 @@ export default function ServiceRequests({
             </div>
             <Button type="submit" className="gap-2" disabled={loading || !message}>
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              Send Request
+              {t("sendRequest")}
             </Button>
           </form>
         </CardContent>
@@ -122,7 +124,7 @@ export default function ServiceRequests({
       {requests.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Your Requests</CardTitle>
+            <CardTitle className="text-base">{t("yourRequests")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">

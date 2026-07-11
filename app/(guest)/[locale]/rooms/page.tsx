@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import Link from "next/link";
 import prisma from "@/lib/prisma";
 import { calculateRoomPrice } from "@/lib/pricing";
@@ -11,16 +12,16 @@ import { Button } from "@/components/ui/button";
 import { Search, Wifi, Tv, Wind, Coffee, Bath, Eye, PawPrint, Shirt } from "lucide-react";
 
 const AVAILABLE_AMENITIES = [
-  { value: "wifi", label: "Wi-Fi", icon: Wifi },
-  { value: "tv", label: "TV", icon: Tv },
-  { value: "air-conditioning", label: "A/C", icon: Wind },
-  { value: "coffee-maker", label: "Coffee Maker", icon: Coffee },
-  { value: "minibar", label: "Minibar", icon: Coffee },
-  { value: "balcony", label: "Balcony", icon: Eye },
-  { value: "bathrobe", label: "Bathrobe", icon: Shirt },
-  { value: "soaking-tub", label: "Soaking Tub", icon: Bath },
-  { value: "city-views", label: "City Views", icon: Eye },
-  { value: "pet-friendly", label: "Pet Friendly", icon: PawPrint },
+  { value: "wifi", labelKey: "wifi", icon: Wifi },
+  { value: "tv", labelKey: "tv", icon: Tv },
+  { value: "air-conditioning", labelKey: "airConditioning", icon: Wind },
+  { value: "coffee-maker", labelKey: "coffeeMaker", icon: Coffee },
+  { value: "minibar", labelKey: "minibar", icon: Coffee },
+  { value: "balcony", labelKey: "balcony", icon: Eye },
+  { value: "bathrobe", labelKey: "bathrobe", icon: Shirt },
+  { value: "soaking-tub", labelKey: "soakingTub", icon: Bath },
+  { value: "city-views", labelKey: "cityViews", icon: Eye },
+  { value: "pet-friendly", labelKey: "petFriendly", icon: PawPrint },
 ];
 
 export const metadata: Metadata = {
@@ -110,14 +111,15 @@ async function getAvailableRoomTypes(searchParams: SearchParams) {
   });
 }
 
-function FilterForm({ searchParams }: { searchParams: SearchParams }) {
+async function FilterForm({ searchParams }: { searchParams: SearchParams }) {
+  const t = await getTranslations("rooms");
   const selectedAmenities = searchParams.amenities?.split(",").filter(Boolean) ?? [];
 
   return (
     <form method="get" className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="space-y-2">
-          <Label htmlFor="checkIn">Check-in</Label>
+          <Label htmlFor="checkIn">{t("filterCheckIn")}</Label>
           <Input
             type="date"
             id="checkIn"
@@ -126,7 +128,7 @@ function FilterForm({ searchParams }: { searchParams: SearchParams }) {
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="checkOut">Check-out</Label>
+          <Label htmlFor="checkOut">{t("filterCheckOut")}</Label>
           <Input
             type="date"
             id="checkOut"
@@ -135,7 +137,7 @@ function FilterForm({ searchParams }: { searchParams: SearchParams }) {
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="capacity">Min Capacity</Label>
+          <Label htmlFor="capacity">{t("filterMinCapacity")}</Label>
           <Input
             type="number"
             id="capacity"
@@ -146,19 +148,19 @@ function FilterForm({ searchParams }: { searchParams: SearchParams }) {
           />
         </div>
         <div className="space-y-2">
-          <Label>Price Range</Label>
+          <Label>{t("filterPriceRange")}</Label>
           <div className="flex gap-2">
             <Input
               type="number"
               name="minPrice"
-              placeholder="Min"
+              placeholder={t("filterMin")}
               min="0"
               defaultValue={searchParams.minPrice ?? ""}
             />
             <Input
               type="number"
               name="maxPrice"
-              placeholder="Max"
+              placeholder={t("filterMax")}
               min="0"
               defaultValue={searchParams.maxPrice ?? ""}
             />
@@ -169,11 +171,12 @@ function FilterForm({ searchParams }: { searchParams: SearchParams }) {
       <input type="hidden" name="amenities" value={selectedAmenities.join(",")} />
 
       <div className="space-y-2">
-        <Label>Amenities</Label>
+        <Label>{t("filterAmenities")}</Label>
         <div className="flex flex-wrap gap-3">
           {AVAILABLE_AMENITIES.map((a) => {
             const Icon = a.icon;
             const checked = selectedAmenities.includes(a.value);
+            const amenityLabel = t(`amenities.${a.labelKey}`);
             return (
               <label
                 key={a.value}
@@ -199,7 +202,7 @@ function FilterForm({ searchParams }: { searchParams: SearchParams }) {
                   }}
                 />
                 <Icon className="h-3.5 w-3.5" />
-                {a.label}
+                {amenityLabel}
               </label>
             );
           })}
@@ -208,19 +211,20 @@ function FilterForm({ searchParams }: { searchParams: SearchParams }) {
 
       <Button type="submit" className="gap-2">
         <Search className="h-4 w-4" />
-        Search
+        {t("search")}
       </Button>
     </form>
   );
 }
 
 async function RoomList({ searchParams }: { searchParams: SearchParams }) {
+  const t = await getTranslations("rooms");
   const roomTypes = await getAvailableRoomTypes(searchParams);
 
   if (roomTypes.length === 0) {
     return (
       <div className="py-12 text-center text-muted-foreground">
-        No room types available matching your criteria.
+        {t("noResults")}
       </div>
     );
   }
@@ -260,19 +264,19 @@ async function RoomList({ searchParams }: { searchParams: SearchParams }) {
                     </span>
                   )}
                 </div>
-                <span className="text-sm text-muted-foreground">per night</span>
+                <span className="text-sm text-muted-foreground">{t("perNight")}</span>
               </div>
               {hasSurge && (
                 <Badge variant="secondary" className="text-xs">
-                  {finalPrice > basePrice ? "Peak pricing" : "Off-peak pricing"}
+                  {finalPrice > basePrice ? t("peakPricing") : t("offPeakPricing")}
                 </Badge>
               )}
               <div className="flex items-center gap-2">
                 <Badge variant="secondary">
-                  Up to {roomType.capacity} {roomType.capacity === 1 ? "guest" : "guests"}
+                  {roomType.capacity} {roomType.capacity === 1 ? t("guest") : t("guests")}
                 </Badge>
                 <Badge variant="outline">
-                  {roomType.rooms.length} {roomType.rooms.length === 1 ? "room" : "rooms"} available
+                  {roomType.rooms.length} {roomType.rooms.length === 1 ? t("roomAvailable") : t("roomsAvailable")}
                 </Badge>
               </div>
               {roomType.amenities.length > 0 && (
@@ -284,7 +288,7 @@ async function RoomList({ searchParams }: { searchParams: SearchParams }) {
                   ))}
                   {roomType.amenities.length > 4 && (
                     <Badge variant="outline" className="text-xs">
-                      +{roomType.amenities.length - 4} more
+                      +{roomType.amenities.length - 4} {t("more")}
                     </Badge>
                   )}
                 </div>
@@ -292,7 +296,7 @@ async function RoomList({ searchParams }: { searchParams: SearchParams }) {
             </CardContent>
             <CardFooter>
               <Button className="w-full" render={<Link href={`/rooms/${roomType.id}${searchParams.checkIn && searchParams.checkOut ? `?checkIn=${searchParams.checkIn}&checkOut=${searchParams.checkOut}` : ""}`} />}>
-                View Details
+                {t("viewDetails")}
               </Button>
             </CardFooter>
           </Card>
@@ -307,22 +311,23 @@ export default async function RoomsPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
+  const t = await getTranslations("rooms");
   const params = await searchParams;
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold">Discover Rooms</h1>
+        <h1 className="text-3xl font-bold">{t("title")}</h1>
         <p className="text-muted-foreground">
-          Find the perfect room for your stay.
+          {t("subtitle")}
         </p>
       </div>
 
-      <Suspense fallback={<div>Loading filters...</div>}>
+      <Suspense fallback={<div>{t("loadingFilters")}</div>}>
         <FilterForm searchParams={params} />
       </Suspense>
 
-      <Suspense fallback={<div>Loading rooms...</div>}>
+      <Suspense fallback={<div>{t("loadingRooms")}</div>}>
         <RoomList searchParams={params} />
       </Suspense>
     </div>

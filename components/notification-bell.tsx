@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Bell, Check } from "lucide-react";
 import {
@@ -17,6 +18,7 @@ type Notification = {
 };
 
 export default function NotificationBell() {
+  const t = useTranslations("notifications");
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unread, setUnread] = useState(0);
@@ -70,7 +72,7 @@ export default function NotificationBell() {
       {open && (
         <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-lg border bg-background shadow-md">
           <div className="flex items-center justify-between border-b px-4 py-2">
-            <span className="text-sm font-medium">Notifications</span>
+            <span className="text-sm font-medium">{t("title")}</span>
             {unread > 0 && (
               <Button
                 variant="ghost"
@@ -79,14 +81,14 @@ export default function NotificationBell() {
                 onClick={handleMarkRead}
               >
                 <Check className="h-3 w-3" />
-                Mark all read
+                {t("markAllRead")}
               </Button>
             )}
           </div>
           <div className="max-h-80 overflow-y-auto">
             {notifications.length === 0 ? (
               <p className="px-4 py-6 text-center text-sm text-muted-foreground">
-                No notifications yet.
+                {t("noNotifications")}
               </p>
             ) : (
               notifications.map((n) => (

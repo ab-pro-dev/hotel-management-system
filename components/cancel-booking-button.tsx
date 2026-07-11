@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Loader2, XCircle } from "lucide-react";
 import { cancelBooking } from "@/lib/actions/booking";
@@ -12,6 +13,7 @@ type Props = {
 };
 
 export default function CancelBookingButton({ bookingId, checkInDate }: Props) {
+  const t = useTranslations("cancel");
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -22,8 +24,8 @@ export default function CancelBookingButton({ bookingId, checkInDate }: Props) {
 
   async function handleCancel() {
     const message = within48h
-      ? "This booking is within 48 hours of check-in. A 50% cancellation fee will apply. Continue?"
-      : "Cancel this booking for a full refund?";
+      ? t("within48h")
+      : t("confirmCancel");
     if (!confirm(message)) return;
 
     setLoading(true);
@@ -32,7 +34,7 @@ export default function CancelBookingButton({ bookingId, checkInDate }: Props) {
       await cancelBooking(bookingId);
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to cancel");
+      setError(e instanceof Error ? e.message : t("failedCancel"));
     } finally {
       setLoading(false);
     }
@@ -48,7 +50,7 @@ export default function CancelBookingButton({ bookingId, checkInDate }: Props) {
         className="gap-1"
       >
         {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <XCircle className="h-3 w-3" />}
-        Cancel Booking
+        {t("cancelBooking")}
       </Button>
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>

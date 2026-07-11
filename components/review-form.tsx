@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +9,7 @@ import { Star, Loader2 } from "lucide-react";
 import { submitReview } from "@/lib/actions/review";
 
 export default function ReviewForm({ bookingId }: { bookingId: string }) {
+  const t = useTranslations("dashboard");
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
   const [comment, setComment] = useState("");
@@ -18,7 +20,7 @@ export default function ReviewForm({ bookingId }: { bookingId: string }) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (rating === 0) {
-      setError("Please select a rating");
+      setError(t("pleaseSelectRating"));
       return;
     }
     setLoading(true);
@@ -27,7 +29,7 @@ export default function ReviewForm({ bookingId }: { bookingId: string }) {
       await submitReview({ bookingId, rating, comment });
       setSubmitted(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to submit review");
+      setError(e instanceof Error ? e.message : t("failedSubmitReview"));
     } finally {
       setLoading(false);
     }
@@ -36,14 +38,14 @@ export default function ReviewForm({ bookingId }: { bookingId: string }) {
   if (submitted) {
     return (
       <div className="rounded-lg bg-muted p-3 text-sm text-muted-foreground">
-        Thank you for your review!
+        {t("reviewThanks")}
       </div>
     );
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3 rounded-lg border p-3">
-      <Label className="text-sm">Leave a Review</Label>
+      <Label className="text-sm">{t("leaveReview")}</Label>
       <div className="flex items-center gap-1">
         {[1, 2, 3, 4, 5].map((value) => (
           <button
@@ -65,13 +67,13 @@ export default function ReviewForm({ bookingId }: { bookingId: string }) {
         ))}
       </div>
       <Input
-        placeholder="Share your experience..."
+        placeholder={t("reviewPlaceholder")}
         value={comment}
         onChange={(e) => setComment(e.target.value)}
       />
       {error && <p className="text-xs text-destructive">{error}</p>}
       <Button type="submit" size="sm" disabled={loading}>
-        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit"}
+        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : t("submit")}
       </Button>
     </form>
   );

@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import QRCode from "qrcode";
@@ -15,6 +16,7 @@ export const metadata = {
 };
 
 export default async function GuestDashboard() {
+  const t = await getTranslations("dashboard");
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
@@ -75,8 +77,8 @@ export default async function GuestDashboard() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold">My Dashboard</h1>
-        <p className="text-muted-foreground">Welcome back, {session.user.name || "Guest"}</p>
+        <h1 className="text-2xl font-bold">{t("title")}</h1>
+        <p className="text-muted-foreground">{t("welcome", { name: session.user.name || t("guestDefault") })}</p>
       </div>
 
       {guest && (
@@ -87,17 +89,17 @@ export default async function GuestDashboard() {
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="text-lg font-bold">{guest.loyaltyPoints.toLocaleString()} pts</span>
+                <span className="text-lg font-bold">{guest.loyaltyPoints.toLocaleString()} {t("loyaltyPoints")}</span>
                 <Badge variant="secondary" className="text-xs">
                   {guest.loyaltyTier}
                 </Badge>
               </div>
               <p className="text-sm text-muted-foreground">
                 {guest.loyaltyTier === "GOLD"
-                  ? "Top tier — enjoy exclusive perks!"
+                  ? t("topTier")
                   : guest.loyaltyTier === "SILVER"
-                    ? `${(10000 - guest.loyaltyPoints).toLocaleString()} pts to Gold`
-                    : `${(3000 - guest.loyaltyPoints).toLocaleString()} pts to Silver`}
+                    ? `${(10000 - guest.loyaltyPoints).toLocaleString()} ${t("ptsToGold")}`
+                    : `${(3000 - guest.loyaltyPoints).toLocaleString()} ${t("ptsToSilver")}`}
               </p>
             </div>
           </CardContent>
@@ -105,9 +107,9 @@ export default async function GuestDashboard() {
       )}
 
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold">Upcoming Stays</h2>
+        <h2 className="text-lg font-semibold">{t("upcomingStays")}</h2>
         {upcomingBookings.length === 0 ? (
-          <p className="text-muted-foreground">No upcoming bookings.</p>
+          <p className="text-muted-foreground">{t("noUpcoming")}</p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             {upcomingBookings.map((booking) => (
@@ -123,11 +125,11 @@ export default async function GuestDashboard() {
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="text-sm">
-                    <span className="text-muted-foreground">Check-in: </span>
+                    <span className="text-muted-foreground">{t("checkIn")}: </span>
                     {new Date(booking.checkInDate).toLocaleDateString()}
                   </div>
                   <div className="text-sm">
-                    <span className="text-muted-foreground">Check-out: </span>
+                    <span className="text-muted-foreground">{t("checkOut")}: </span>
                     {new Date(booking.checkOutDate).toLocaleDateString()}
                   </div>
                   <div className="text-sm font-medium">
@@ -135,7 +137,7 @@ export default async function GuestDashboard() {
                   </div>
                   {qrCodes[booking.id] && (
                     <div className="pt-2">
-                      <p className="text-xs text-muted-foreground mb-2">Scan to check in:</p>
+                      <p className="text-xs text-muted-foreground mb-2">{t("scanToCheckIn")}</p>
                       <img
                         src={qrCodes[booking.id]}
                         alt="Check-in QR code"
@@ -162,7 +164,7 @@ export default async function GuestDashboard() {
 
       {checkedInBooking && (
         <section className="space-y-4">
-          <h2 className="text-lg font-semibold">Service Requests</h2>
+          <h2 className="text-lg font-semibold">{t("serviceRequests")}</h2>
           <ServiceRequests
             bookingId={checkedInBooking.id}
             initialRequests={serviceRequests.map((r) => ({
@@ -174,9 +176,9 @@ export default async function GuestDashboard() {
       )}
 
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold">Past Stays</h2>
+        <h2 className="text-lg font-semibold">{t("pastStays")}</h2>
         {pastBookings.length === 0 ? (
-          <p className="text-muted-foreground">No past bookings.</p>
+          <p className="text-muted-foreground">{t("noPast")}</p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             {pastBookings.map((booking) => (
@@ -184,13 +186,13 @@ export default async function GuestDashboard() {
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base">{booking.room.roomType.title}</CardTitle>
-                    <Badge variant="outline">CHECKED OUT</Badge>
+                    <Badge variant="outline">{t("checkedOut")}</Badge>
                   </div>
                   <CardDescription>Room {booking.room.roomNumber}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="text-sm">
-                    <span className="text-muted-foreground">Dates: </span>
+                    <span className="text-muted-foreground">{t("dates")}: </span>
                     {new Date(booking.checkInDate).toLocaleDateString()} — {new Date(booking.checkOutDate).toLocaleDateString()}
                   </div>
                   <div className="text-sm font-medium">
@@ -198,7 +200,7 @@ export default async function GuestDashboard() {
                   </div>
                   <Button variant="outline" size="sm" className="gap-2" render={<a href={`/api/bills?bookingId=${booking.id}`} target="_blank" />}>
                     <Download className="h-4 w-4" />
-                    Download Bill
+                    {t("downloadBill")}
                   </Button>
                   {booking.review ? (
                     <div className="rounded-lg bg-muted p-3">
