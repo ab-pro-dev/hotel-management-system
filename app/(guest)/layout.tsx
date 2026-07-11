@@ -1,4 +1,5 @@
 import Link from "next/link";
+import NotificationBell from "@/components/notification-bell";
 
 export default function GuestLayout({
   children,
@@ -10,10 +11,11 @@ export default function GuestLayout({
       <header className="border-b bg-background">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
           <span className="text-lg font-semibold">Grand Raya Hotel</span>
-          <nav className="flex gap-4 text-sm">
+          <nav className="flex items-center gap-4 text-sm">
             <Link href="/rooms" className="text-muted-foreground hover:text-foreground">
               Rooms
             </Link>
+            <NotificationBell />
           </nav>
         </div>
       </header>

@@ -8,6 +8,7 @@ import { calculateRoomPrice } from "@/lib/pricing";
 import { generateCheckInToken } from "./qr-checkin";
 import { pusherServer } from "@/lib/pusher-server";
 import { logAudit } from "@/lib/audit";
+import { createNotification } from "@/lib/notifications";
 import { randomBytes } from "crypto";
 
 const bookingSchema = z.object({
@@ -129,6 +130,19 @@ export async function createBooking(input: z.infer<typeof bookingSchema>) {
 
   await generateCheckInToken(result.id);
 
+  const guestId = result.guestId;
+  const bookingWithRoom = await prisma.booking.findUnique({
+    where: { id: result.id },
+    include: { room: { include: { roomType: true } } },
+  });
+
+  if (bookingWithRoom) {
+    await createNotification(
+      guestId,
+      `Booking confirmed! Room ${bookingWithRoom.room.roomNumber} (${bookingWithRoom.room.roomType.title}) — check-in ${new Date(bookingWithRoom.checkInDate).toLocaleDateString()}.`
+    );
+  }
+
   return result;
 }
 
@@ -206,6 +220,11 @@ export async function cancelBooking(bookingId: string) {
       });
     }
   }
+
+  await createNotification(
+    booking.guestId,
+    `Your booking has been cancelled. ${result.isWithin48Hours ? "A 50% cancellation fee was applied." : "A full refund has been issued."}`
+  );
 
   return result;
 }

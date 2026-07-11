@@ -4,6 +4,7 @@ import { Role } from "@prisma/client";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import { pusherServer } from "@/lib/pusher-server";
+import { createNotification } from "@/lib/notifications";
 
 async function requireReceptionistOrAdmin() {
   const session = await auth();
@@ -41,6 +42,11 @@ export async function checkInGuest(bookingId: string) {
     roomId: updatedRoom.id,
     status: updatedRoom.status,
   });
+
+  await createNotification(
+    booking.guestId,
+    `Welcome! You are now checked into room ${booking.room.roomNumber}. Enjoy your stay!`
+  );
 
   return updatedBooking;
 }
@@ -92,6 +98,11 @@ export async function checkOutGuest(bookingId: string) {
     roomId: result.updatedRoom.id,
     status: result.updatedRoom.status,
   });
+
+  await createNotification(
+    booking.guestId,
+    `Checked out successfully. You earned ${result.pointsEarned} loyalty points!`
+  );
 
   return result.updatedBooking;
 }

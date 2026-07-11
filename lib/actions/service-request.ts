@@ -4,6 +4,7 @@ import { ServiceRequestType, ServiceRequestStatus, RequestPriority } from "@pris
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import { pusherServer } from "@/lib/pusher-server";
+import { createNotification } from "@/lib/notifications";
 
 const CHANNEL_MAP: Record<ServiceRequestType, string> = {
   HOUSEKEEPING: "housekeeping-requests",
@@ -66,6 +67,18 @@ export async function updateServiceRequestStatus(
     id: updated.id,
     status: updated.status,
   });
+
+  const booking = await prisma.booking.findUnique({
+    where: { id: updated.bookingId },
+    select: { guestId: true },
+  });
+
+  if (booking) {
+    await createNotification(
+      booking.guestId,
+      `Your ${updated.type.toLowerCase().replace("_", " ")} request has been ${status.toLowerCase()}.`
+    );
+  }
 
   return updated;
 }
