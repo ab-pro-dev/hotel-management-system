@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cycleRoomStatus } from "@/lib/actions/housekeeping";
-import { Loader2 } from "lucide-react";
+import { queueAction } from "@/lib/offline-queue";
+import { Loader2, WifiOff } from "lucide-react";
 
 type Room = {
   id: string;
@@ -20,13 +21,36 @@ const STATUS_LABELS: Record<string, { label: string; action: string }> = {
 export default function HousekeepingList({ initialRooms }: { initialRooms: Room[] }) {
   const [rooms, setRooms] = useState(initialRooms);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
 
-  async function handleCycle(roomId: string) {
-    setLoadingId(roomId);
-    try {
-      const updated = await cycleRoomStatus(roomId);
+  const STATUS_CYCLE: Record<string, string> = {
+    DIRTY: "IN_PROGRESS",
+    IN_PROGRESS: "AVAILABLE",
+  };
+
+  async function handleCycle(room: Room) {
+    const nextStatus = STATUS_CYCLE[room.status];
+    if (!nextStatus) return;
+
+    setLoadingId(room.id);
+
+    if (!navigator.onLine) {
+      setPendingIds((prev) => new Set(prev).add(room.id));
       setRooms((prev) =>
-        prev.map((r) => (r.id === roomId ? { ...r, status: updated.status } : r))
+        prev.map((r) => (r.id === room.id ? { ...r, status: nextStatus } : r))
+      );
+      await queueAction({
+        url: "/api/housekeeping/status",
+        body: { roomId: room.id, status: nextStatus },
+      });
+      setLoadingId(null);
+      return;
+    }
+
+    try {
+      const updated = await cycleRoomStatus(room.id);
+      setRooms((prev) =>
+        prev.map((r) => (r.id === room.id ? { ...r, status: updated.status } : r))
       );
     } catch (e) {
       console.error(e);
@@ -35,7 +59,9 @@ export default function HousekeepingList({ initialRooms }: { initialRooms: Room[
     }
   }
 
-  if (rooms.length === 0) {
+  const visibleRooms = rooms.filter((r) => STATUS_LABELS[r.status]);
+
+  if (visibleRooms.length === 0) {
     return (
       <div className="py-12 text-center text-muted-foreground">
         No rooms need cleaning.
@@ -45,9 +71,9 @@ export default function HousekeepingList({ initialRooms }: { initialRooms: Room[
 
   return (
     <div className="divide-y rounded-lg border">
-      {rooms.map((room) => {
+      {visibleRooms.map((room) => {
         const info = STATUS_LABELS[room.status];
-        if (!info) return null;
+        const isPending = pendingIds.has(room.id);
 
         return (
           <div key={room.id} className="flex items-center justify-between gap-4 p-4">
@@ -59,11 +85,13 @@ export default function HousekeepingList({ initialRooms }: { initialRooms: Room[
             <Button
               size="lg"
               className="h-12 min-w-[100px] shrink-0"
-              onClick={() => handleCycle(room.id)}
+              onClick={() => handleCycle(room)}
               disabled={loadingId === room.id}
             >
               {loadingId === room.id ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
+              ) : isPending ? (
+                <WifiOff className="h-5 w-5" />
               ) : (
                 info.action
               )}
