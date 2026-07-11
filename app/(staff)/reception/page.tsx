@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import prisma from "@/lib/prisma";
 import RoomGrid from "@/components/reception/room-grid";
 import StaffServiceRequests from "@/components/reception/service-requests-panel";
+import MaintenancePanel from "@/components/reception/maintenance-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -78,6 +79,41 @@ async function getServiceRequests(propertyId?: string) {
   }));
 }
 
+async function getMaintenanceRequests(propertyId?: string) {
+  const requests = await prisma.serviceRequest.findMany({
+    where: {
+      type: "MAINTENANCE",
+      status: { not: "RESOLVED" },
+      ...(propertyId
+        ? { booking: { room: { roomType: { propertyId } } } }
+        : {}),
+    },
+    include: {
+      booking: {
+        include: {
+          room: { select: { roomNumber: true } },
+          guest: { select: { name: true } },
+        },
+      },
+      assignedTo: { select: { name: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return requests.map((r) => ({
+    id: r.id,
+    bookingId: r.bookingId,
+    message: r.message,
+    status: r.status,
+    priority: r.priority,
+    assignedToUserId: r.assignedToUserId,
+    assignedToName: r.assignedTo?.name ?? null,
+    createdAt: r.createdAt.toISOString(),
+    guestName: r.booking.guest.name,
+    roomNumber: r.booking.room.roomNumber,
+  }));
+}
+
 type ReceptionSearchParams = {
   propertyId?: string;
 };
@@ -88,9 +124,10 @@ export default async function ReceptionPage({
   searchParams: Promise<ReceptionSearchParams>;
 }) {
   const params = await searchParams;
-  const [rooms, serviceRequests] = await Promise.all([
+  const [rooms, serviceRequests, maintenanceRequests] = await Promise.all([
     getRooms(params.propertyId),
     getServiceRequests(params.propertyId),
+    getMaintenanceRequests(params.propertyId),
   ]);
 
   return (
@@ -100,6 +137,7 @@ export default async function ReceptionPage({
         <p className="text-muted-foreground">Live status of all hotel rooms.</p>
       </div>
       <RoomGrid initialRooms={rooms} />
+      <MaintenancePanel initialRequests={maintenanceRequests} />
       <StaffServiceRequests initialRequests={serviceRequests} />
     </div>
   );

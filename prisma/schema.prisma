@@ -12,15 +12,16 @@ datasource db {
 }
 
 model User {
-  id            String      @id @default(cuid())
+  id            String           @id @default(cuid())
   name          String
-  email         String      @unique
+  email         String           @unique
   passwordHash  String
-  role          Role        @default(GUEST)
-  loyaltyPoints Int         @default(0)
-  loyaltyTier   LoyaltyTier @default(BRONZE)
+  role          Role             @default(GUEST)
+  loyaltyPoints Int              @default(0)
+  loyaltyTier   LoyaltyTier      @default(BRONZE)
   bookings      Booking[]
-  createdAt     DateTime    @default(now())
+  assignedJobs  ServiceRequest[]
+  createdAt     DateTime         @default(now())
 }
 
 enum Role {
@@ -114,13 +115,16 @@ enum PaymentStatus {
 }
 
 model ServiceRequest {
-  id        String               @id @default(cuid())
-  booking   Booking              @relation(fields: [bookingId], references: [id])
-  bookingId String
-  type      ServiceRequestType
-  message   String
-  status    ServiceRequestStatus @default(OPEN)
-  createdAt DateTime             @default(now())
+  id               String               @id @default(cuid())
+  booking          Booking              @relation(fields: [bookingId], references: [id])
+  bookingId        String
+  type             ServiceRequestType
+  message          String
+  status           ServiceRequestStatus @default(OPEN)
+  priority         RequestPriority      @default(MEDIUM)
+  assignedTo       User?                @relation(fields: [assignedToUserId], references: [id])
+  assignedToUserId String?
+  createdAt        DateTime             @default(now())
 }
 
 enum ServiceRequestType {
@@ -133,6 +137,13 @@ enum ServiceRequestStatus {
   OPEN
   ACKNOWLEDGED
   RESOLVED
+}
+
+enum RequestPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
 }
 
 model Review {

@@ -1,6 +1,6 @@
 "use server";
 
-import { ServiceRequestType, ServiceRequestStatus } from "@prisma/client";
+import { ServiceRequestType, ServiceRequestStatus, RequestPriority } from "@prisma/client";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import { pusherServer } from "@/lib/pusher-server";
@@ -14,7 +14,8 @@ const CHANNEL_MAP: Record<ServiceRequestType, string> = {
 export async function createServiceRequest(
   bookingId: string,
   type: ServiceRequestType,
-  message: string
+  message: string,
+  priority: RequestPriority = "MEDIUM"
 ) {
   const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
   if (!booking) throw new Error("Booking not found");
@@ -28,6 +29,7 @@ export async function createServiceRequest(
       type,
       message,
       status: "OPEN",
+      priority,
     },
   });
 
@@ -66,4 +68,42 @@ export async function updateServiceRequestStatus(
   });
 
   return updated;
+}
+
+export async function assignServiceRequest(
+  requestId: string,
+  assignedToUserId: string | null
+) {
+  const session = await auth();
+  if (!session?.user || !["RECEPTIONIST", "ADMIN"].includes(session.user.role)) {
+    throw new Error("Unauthorized: RECEPTIONIST or ADMIN role required");
+  }
+
+  const request = await prisma.serviceRequest.findUnique({ where: { id: requestId } });
+  if (!request) throw new Error("Service request not found");
+
+  const updated = await prisma.serviceRequest.update({
+    where: { id: requestId },
+    data: { assignedToUserId },
+  });
+
+  await pusherServer.trigger(CHANNEL_MAP[updated.type], "service-request-updated", {
+    id: updated.id,
+    assignedToUserId: updated.assignedToUserId,
+  });
+
+  return updated;
+}
+
+export async function listStaff() {
+  const session = await auth();
+  if (!session?.user || !["RECEPTIONIST", "ADMIN"].includes(session.user.role)) {
+    throw new Error("Unauthorized: RECEPTIONIST or ADMIN role required");
+  }
+
+  return prisma.user.findMany({
+    where: { role: { in: ["RECEPTIONIST", "HOUSEKEEPER", "ADMIN"] } },
+    select: { id: true, name: true, role: true },
+    orderBy: { name: "asc" },
+  });
 }
