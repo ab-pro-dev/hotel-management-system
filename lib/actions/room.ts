@@ -4,6 +4,7 @@ import { z } from "zod";
 import { Role, RoomStatus } from "@prisma/client";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
+import { logAudit } from "@/lib/audit";
 
 const roomCreateSchema = z.object({
   roomNumber: z.string().min(1, "Room number is required"),
@@ -23,9 +24,11 @@ async function requireAdmin() {
 }
 
 export async function createRoom(data: z.infer<typeof roomCreateSchema>) {
-  await requireAdmin();
+  const user = await requireAdmin();
   const parsed = roomCreateSchema.parse(data);
-  return prisma.room.create({ data: parsed });
+  const room = await prisma.room.create({ data: parsed });
+  await logAudit({ userId: user.id, action: "CREATE", targetTable: "Room", targetId: room.id, metadata: { roomNumber: room.roomNumber, roomTypeId: room.roomTypeId } });
+  return room;
 }
 
 export async function listRooms(propertyId?: string) {
@@ -41,7 +44,9 @@ export async function updateRoomStatus(
   id: string,
   data: z.infer<typeof roomStatusSchema>
 ) {
-  await requireAdmin();
+  const user = await requireAdmin();
   const parsed = roomStatusSchema.parse(data);
-  return prisma.room.update({ where: { id }, data: parsed });
+  const room = await prisma.room.update({ where: { id }, data: parsed });
+  await logAudit({ userId: user.id, action: "UPDATE_STATUS", targetTable: "Room", targetId: room.id, metadata: { status: room.status } });
+  return room;
 }

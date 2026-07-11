@@ -4,6 +4,7 @@ import { z } from "zod";
 import { Role } from "@prisma/client";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
+import { logAudit } from "@/lib/audit";
 
 const roomTypeSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -24,9 +25,11 @@ async function requireAdmin() {
 }
 
 export async function createRoomType(data: z.infer<typeof roomTypeSchema>) {
-  await requireAdmin();
+  const user = await requireAdmin();
   const parsed = roomTypeSchema.parse(data);
-  return prisma.roomType.create({ data: parsed });
+  const roomType = await prisma.roomType.create({ data: parsed });
+  await logAudit({ userId: user.id, action: "CREATE", targetTable: "RoomType", targetId: roomType.id, metadata: { title: roomType.title, basePrice: Number(roomType.basePrice) } });
+  return roomType;
 }
 
 export async function listRoomTypes(propertyId?: string) {
@@ -40,12 +43,16 @@ export async function updateRoomType(
   id: string,
   data: z.infer<typeof roomTypeUpdateSchema>
 ) {
-  await requireAdmin();
+  const user = await requireAdmin();
   const parsed = roomTypeUpdateSchema.parse(data);
-  return prisma.roomType.update({ where: { id }, data: parsed });
+  const roomType = await prisma.roomType.update({ where: { id }, data: parsed });
+  await logAudit({ userId: user.id, action: "UPDATE", targetTable: "RoomType", targetId: roomType.id, metadata: parsed });
+  return roomType;
 }
 
 export async function deleteRoomType(id: string) {
-  await requireAdmin();
-  return prisma.roomType.delete({ where: { id } });
+  const user = await requireAdmin();
+  const roomType = await prisma.roomType.delete({ where: { id } });
+  await logAudit({ userId: user.id, action: "DELETE", targetTable: "RoomType", targetId: roomType.id, metadata: { title: roomType.title } });
+  return roomType;
 }

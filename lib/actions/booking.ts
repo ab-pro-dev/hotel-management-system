@@ -7,6 +7,7 @@ import prisma from "@/lib/prisma";
 import { calculateRoomPrice } from "@/lib/pricing";
 import { generateCheckInToken } from "./qr-checkin";
 import { pusherServer } from "@/lib/pusher-server";
+import { logAudit } from "@/lib/audit";
 import { randomBytes } from "crypto";
 
 const bookingSchema = z.object({
@@ -145,6 +146,8 @@ export async function cancelBooking(bookingId: string) {
   if (booking.status !== "CONFIRMED") {
     throw new Error("Only CONFIRMED bookings can be cancelled");
   }
+
+  await logAudit({ userId: session.user.id, action: "CANCEL", targetTable: "Booking", targetId: booking.id, metadata: { totalPrice: Number(booking.totalPrice), roomId: booking.roomId } });
 
   const now = new Date();
   const checkIn = new Date(booking.checkInDate);
