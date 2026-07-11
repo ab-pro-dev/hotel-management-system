@@ -51,6 +51,8 @@ model RoomType {
   description   String
   basePrice     Decimal
   capacity      Int
+  photoUrls     String[]
+  amenities     String[]
   property      Property        @relation(fields: [propertyId], references: [id])
   propertyId    String
   rooms         Room[]

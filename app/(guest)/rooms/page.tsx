@@ -8,7 +8,20 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Search } from "lucide-react";
+import { Search, Wifi, Tv, Wind, Coffee, Bath, Eye, PawPrint, Shirt } from "lucide-react";
+
+const AVAILABLE_AMENITIES = [
+  { value: "wifi", label: "Wi-Fi", icon: Wifi },
+  { value: "tv", label: "TV", icon: Tv },
+  { value: "air-conditioning", label: "A/C", icon: Wind },
+  { value: "coffee-maker", label: "Coffee Maker", icon: Coffee },
+  { value: "minibar", label: "Minibar", icon: Coffee },
+  { value: "balcony", label: "Balcony", icon: Eye },
+  { value: "bathrobe", label: "Bathrobe", icon: Shirt },
+  { value: "soaking-tub", label: "Soaking Tub", icon: Bath },
+  { value: "city-views", label: "City Views", icon: Eye },
+  { value: "pet-friendly", label: "Pet Friendly", icon: PawPrint },
+];
 
 export const metadata: Metadata = {
   title: "Discover Rooms",
@@ -22,10 +35,11 @@ type SearchParams = {
   capacity?: string;
   minPrice?: string;
   maxPrice?: string;
+  amenities?: string;
 };
 
 async function getAvailableRoomTypes(searchParams: SearchParams) {
-  const { propertyId, checkIn, checkOut, capacity, minPrice, maxPrice } = searchParams;
+  const { propertyId, checkIn, checkOut, capacity, minPrice, maxPrice, amenities } = searchParams;
 
   const where: Record<string, unknown> = {};
 
@@ -41,6 +55,13 @@ async function getAvailableRoomTypes(searchParams: SearchParams) {
     where.basePrice = {};
     if (minPrice) (where.basePrice as Record<string, number>).gte = parseFloat(minPrice);
     if (maxPrice) (where.basePrice as Record<string, number>).lte = parseFloat(maxPrice);
+  }
+
+  if (amenities) {
+    const selected = amenities.split(",").filter(Boolean);
+    if (selected.length > 0) {
+      where.amenities = { hasEvery: selected };
+    }
   }
 
   if (checkIn && checkOut) {
@@ -90,62 +111,105 @@ async function getAvailableRoomTypes(searchParams: SearchParams) {
 }
 
 function FilterForm({ searchParams }: { searchParams: SearchParams }) {
+  const selectedAmenities = searchParams.amenities?.split(",").filter(Boolean) ?? [];
+
   return (
-    <form method="get" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <div className="space-y-2">
-        <Label htmlFor="checkIn">Check-in</Label>
-        <Input
-          type="date"
-          id="checkIn"
-          name="checkIn"
-          defaultValue={searchParams.checkIn ?? ""}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="checkOut">Check-out</Label>
-        <Input
-          type="date"
-          id="checkOut"
-          name="checkOut"
-          defaultValue={searchParams.checkOut ?? ""}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="capacity">Min Capacity</Label>
-        <Input
-          type="number"
-          id="capacity"
-          name="capacity"
-          placeholder="e.g. 2"
-          min="1"
-          defaultValue={searchParams.capacity ?? ""}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label>Price Range</Label>
-        <div className="flex gap-2">
+    <form method="get" className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="space-y-2">
+          <Label htmlFor="checkIn">Check-in</Label>
           <Input
-            type="number"
-            name="minPrice"
-            placeholder="Min"
-            min="0"
-            defaultValue={searchParams.minPrice ?? ""}
-          />
-          <Input
-            type="number"
-            name="maxPrice"
-            placeholder="Max"
-            min="0"
-            defaultValue={searchParams.maxPrice ?? ""}
+            type="date"
+            id="checkIn"
+            name="checkIn"
+            defaultValue={searchParams.checkIn ?? ""}
           />
         </div>
+        <div className="space-y-2">
+          <Label htmlFor="checkOut">Check-out</Label>
+          <Input
+            type="date"
+            id="checkOut"
+            name="checkOut"
+            defaultValue={searchParams.checkOut ?? ""}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="capacity">Min Capacity</Label>
+          <Input
+            type="number"
+            id="capacity"
+            name="capacity"
+            placeholder="e.g. 2"
+            min="1"
+            defaultValue={searchParams.capacity ?? ""}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Price Range</Label>
+          <div className="flex gap-2">
+            <Input
+              type="number"
+              name="minPrice"
+              placeholder="Min"
+              min="0"
+              defaultValue={searchParams.minPrice ?? ""}
+            />
+            <Input
+              type="number"
+              name="maxPrice"
+              placeholder="Max"
+              min="0"
+              defaultValue={searchParams.maxPrice ?? ""}
+            />
+          </div>
+        </div>
       </div>
-      <div className="sm:col-span-2 lg:col-span-4">
-        <Button type="submit" className="gap-2">
-          <Search className="h-4 w-4" />
-          Search
-        </Button>
+
+      <input type="hidden" name="amenities" value={selectedAmenities.join(",")} />
+
+      <div className="space-y-2">
+        <Label>Amenities</Label>
+        <div className="flex flex-wrap gap-3">
+          {AVAILABLE_AMENITIES.map((a) => {
+            const Icon = a.icon;
+            const checked = selectedAmenities.includes(a.value);
+            return (
+              <label
+                key={a.value}
+                className={`flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                  checked
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border text-muted-foreground hover:border-primary/50"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  className="sr-only"
+                  checked={checked}
+                  onChange={(e) => {
+                    let next: string[];
+                    if (e.target.checked) {
+                      next = [...selectedAmenities, a.value];
+                    } else {
+                      next = selectedAmenities.filter((v) => v !== a.value);
+                    }
+                    const hidden = document.querySelector<HTMLInputElement>('input[name="amenities"]');
+                    if (hidden) hidden.value = next.join(",");
+                  }}
+                />
+                <Icon className="h-3.5 w-3.5" />
+                {a.label}
+              </label>
+            );
+          })}
+        </div>
       </div>
+
+      <Button type="submit" className="gap-2">
+        <Search className="h-4 w-4" />
+        Search
+      </Button>
     </form>
   );
 }
@@ -211,6 +275,20 @@ async function RoomList({ searchParams }: { searchParams: SearchParams }) {
                   {roomType.rooms.length} {roomType.rooms.length === 1 ? "room" : "rooms"} available
                 </Badge>
               </div>
+              {roomType.amenities.length > 0 && (
+                <div className="flex flex-wrap gap-1 pt-1">
+                  {roomType.amenities.slice(0, 4).map((amenity) => (
+                    <Badge key={amenity} variant="outline" className="text-xs">
+                      {amenity}
+                    </Badge>
+                  ))}
+                  {roomType.amenities.length > 4 && (
+                    <Badge variant="outline" className="text-xs">
+                      +{roomType.amenities.length - 4} more
+                    </Badge>
+                  )}
+                </div>
+              )}
             </CardContent>
             <CardFooter>
               <Button className="w-full" render={<Link href={`/rooms/${roomType.id}${searchParams.checkIn && searchParams.checkOut ? `?checkIn=${searchParams.checkIn}&checkOut=${searchParams.checkOut}` : ""}`} />}>
