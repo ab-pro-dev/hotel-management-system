@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { Metadata } from "next";
 import Link from "next/link";
 import prisma from "@/lib/prisma";
+import { calculateRoomPrice } from "@/lib/pricing";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -155,37 +156,65 @@ async function RoomList({ searchParams }: { searchParams: SearchParams }) {
     );
   }
 
+  const checkInDate = searchParams.checkIn
+    ? new Date(searchParams.checkIn)
+    : new Date();
+
+  const prices = await Promise.all(
+    roomTypes.map((rt) =>
+      calculateRoomPrice(Number(rt.basePrice), checkInDate, rt.id)
+    )
+  );
+
   return (
     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      {roomTypes.map((roomType) => (
-        <Card key={roomType.id}>
-          <CardHeader>
-            <CardTitle>{roomType.title}</CardTitle>
-            <CardDescription>{roomType.description}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-2xl font-bold">
-                ${roomType.basePrice.toFixed(2)}
-              </span>
-              <span className="text-sm text-muted-foreground">per night</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary">
-                Up to {roomType.capacity} {roomType.capacity === 1 ? "guest" : "guests"}
-              </Badge>
-              <Badge variant="outline">
-                {roomType.rooms.length} {roomType.rooms.length === 1 ? "room" : "rooms"} available
-              </Badge>
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button className="w-full" render={<Link href={`/rooms/${roomType.id}${searchParams.checkIn && searchParams.checkOut ? `?checkIn=${searchParams.checkIn}&checkOut=${searchParams.checkOut}` : ""}`} />}>
-              View Details
-            </Button>
-          </CardFooter>
-        </Card>
-      ))}
+      {roomTypes.map((roomType, i) => {
+        const finalPrice = prices[i];
+        const basePrice = Number(roomType.basePrice);
+        const hasSurge = finalPrice !== basePrice;
+
+        return (
+          <Card key={roomType.id}>
+            <CardHeader>
+              <CardTitle>{roomType.title}</CardTitle>
+              <CardDescription>{roomType.description}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold">
+                    ${finalPrice.toFixed(2)}
+                  </span>
+                  {hasSurge && (
+                    <span className="text-sm text-muted-foreground line-through">
+                      ${basePrice.toFixed(2)}
+                    </span>
+                  )}
+                </div>
+                <span className="text-sm text-muted-foreground">per night</span>
+              </div>
+              {hasSurge && (
+                <Badge variant="secondary" className="text-xs">
+                  {finalPrice > basePrice ? "Peak pricing" : "Off-peak pricing"}
+                </Badge>
+              )}
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary">
+                  Up to {roomType.capacity} {roomType.capacity === 1 ? "guest" : "guests"}
+                </Badge>
+                <Badge variant="outline">
+                  {roomType.rooms.length} {roomType.rooms.length === 1 ? "room" : "rooms"} available
+                </Badge>
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button className="w-full" render={<Link href={`/rooms/${roomType.id}${searchParams.checkIn && searchParams.checkOut ? `?checkIn=${searchParams.checkIn}&checkOut=${searchParams.checkOut}` : ""}`} />}>
+                View Details
+              </Button>
+            </CardFooter>
+          </Card>
+        );
+      })}
     </div>
   );
 }
