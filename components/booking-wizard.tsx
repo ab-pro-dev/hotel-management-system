@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Check, CreditCard, User, Calendar, Loader2, Tag } from "lucide-react";
+import { Check, CreditCard, User, Calendar, Loader2, Tag, Copy } from "lucide-react";
 import { createBooking } from "@/lib/actions/booking";
 import { applyCoupon, type CouponResult } from "@/lib/actions/coupon";
 
@@ -249,7 +249,7 @@ function StepConfirm({ state, roomType, coupon, t }: { state: State; roomType: R
   );
 }
 
-function StepSuccess({ t }: { t: ReturnType<typeof useTranslations> }) {
+function StepSuccess({ t, bookingUrl, copied, onCopy }: { t: ReturnType<typeof useTranslations>; bookingUrl: string; copied: boolean; onCopy: () => void }) {
   return (
     <div className="space-y-6 text-center">
       <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
@@ -261,6 +261,21 @@ function StepSuccess({ t }: { t: ReturnType<typeof useTranslations> }) {
           {t("booking.reservationCreated")}
         </p>
       </div>
+      {bookingUrl && (
+        <div className="rounded-lg border bg-muted/50 p-4 space-y-2">
+          <p className="text-sm font-medium">{t("booking.manageBooking")}</p>
+          <p className="text-xs text-muted-foreground">{t("booking.manageBookingNote")}</p>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 truncate rounded bg-background px-2 py-1.5 text-xs border font-mono">
+              {bookingUrl}
+            </code>
+            <Button size="sm" variant="outline" onClick={onCopy} className="shrink-0 gap-1">
+              {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+              {copied ? t("booking.copied") : t("booking.copyLink")}
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -290,6 +305,8 @@ export default function BookingWizard({ roomType, initialCheckIn, initialCheckOu
   const [coupon, setCoupon] = useState<CouponResult | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [couponLoading, setCouponLoading] = useState(false);
+  const [bookingAccessToken, setBookingAccessToken] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const canNext =
     (state.step === 0 && state.checkIn && state.checkOut && getNights(state.checkIn, state.checkOut) > 0) ||
@@ -318,7 +335,7 @@ export default function BookingWizard({ roomType, initialCheckIn, initialCheckOu
     setLoading(true);
     setError(null);
     try {
-      await createBooking({
+      const result = await createBooking({
         roomTypeId: roomType.id,
         checkInDate: state.checkIn,
         checkOutDate: state.checkOut,
@@ -326,11 +343,41 @@ export default function BookingWizard({ roomType, initialCheckIn, initialCheckOu
         guestEmail: state.email,
         couponCode: state.couponCode || undefined,
       });
+      if (result && "bookingAccessToken" in result) {
+        setBookingAccessToken(result.bookingAccessToken as string);
+      }
       dispatch({ type: "NEXT" });
     } catch (e) {
       setError(e instanceof Error ? e.message : t("common.loading"));
     } finally {
       setLoading(false);
+    }
+  }
+
+  function getBookingUrl() {
+    if (!bookingAccessToken) return "";
+    if (typeof window !== "undefined") {
+      return `${window.location.origin}/booking/${bookingAccessToken}`;
+    }
+    return `/booking/${bookingAccessToken}`;
+  }
+
+  async function copyLink() {
+    const url = getBookingUrl();
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      const input = document.createElement("input");
+      input.value = url;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand("copy");
+      document.body.removeChild(input);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
   }
 
@@ -396,7 +443,7 @@ export default function BookingWizard({ roomType, initialCheckIn, initialCheckOu
             </div>
           )}
           {state.step === 3 && <StepConfirm state={state} roomType={roomType} coupon={coupon} t={t} />}
-          {state.step === 4 && <StepSuccess t={t} />}
+          {state.step === 4 && <StepSuccess t={t} bookingUrl={getBookingUrl()} copied={copied} onCopy={copyLink} />}
           {error && (
             <div className="mt-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
               {error}

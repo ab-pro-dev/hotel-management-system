@@ -149,7 +149,7 @@ export async function createBooking(input: z.infer<typeof bookingSchema>) {
     );
   }
 
-  return result;
+  return { ...result, bookingAccessToken: accessToken };
 }
 
 export async function cancelBooking(bookingId: string) {

@@ -123,7 +123,11 @@
     "agreement": "By confirming, you agree to the booking terms.",
     "room": "Room",
     "guest": "Guest",
-    "total": "Total"
+    "total": "Total",
+    "manageBooking": "Your Booking Link",
+    "manageBookingNote": "Save this link to check your booking status, view details, or download your bill — no login required.",
+    "copyLink": "Copy",
+    "copied": "Copied!"
   },
   "cancel": {
     "cancelBooking": "Cancel Booking",
