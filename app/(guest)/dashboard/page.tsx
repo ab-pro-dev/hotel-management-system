@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
+import QRCode from "qrcode";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,16 @@ export default async function GuestDashboard() {
     }),
   ]);
 
+  const qrCodes: Record<string, string> = {};
+  for (const booking of upcomingBookings) {
+    if (booking.status === "CONFIRMED" && booking.checkInToken) {
+      qrCodes[booking.id] = await QRCode.toDataURL(
+        `/checkin/${booking.checkInToken}`,
+        { width: 160, margin: 1 }
+      );
+    }
+  }
+
   return (
     <div className="space-y-8">
       <div>
@@ -76,6 +87,18 @@ export default async function GuestDashboard() {
                   <div className="text-sm font-medium">
                     ${Number(booking.totalPrice).toFixed(2)}
                   </div>
+                  {qrCodes[booking.id] && (
+                    <div className="pt-2">
+                      <p className="text-xs text-muted-foreground mb-2">Scan to check in:</p>
+                      <img
+                        src={qrCodes[booking.id]}
+                        alt="Check-in QR code"
+                        width={160}
+                        height={160}
+                        className="rounded-lg border"
+                      />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}

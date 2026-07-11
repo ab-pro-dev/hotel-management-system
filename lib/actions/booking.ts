@@ -4,6 +4,7 @@ import { z } from "zod";
 import { Role } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { calculateRoomPrice } from "@/lib/pricing";
+import { generateCheckInToken } from "./qr-checkin";
 import { randomBytes } from "crypto";
 
 const bookingSchema = z.object({
@@ -13,10 +14,6 @@ const bookingSchema = z.object({
   guestEmail: z.string().email("Valid email is required"),
   guestName: z.string().min(1, "Guest name is required"),
 });
-
-function generateCheckInToken(): string {
-  return randomBytes(32).toString("hex");
-}
 
 export async function createBooking(input: z.infer<typeof bookingSchema>) {
   const data = bookingSchema.parse(input);
@@ -75,8 +72,6 @@ export async function createBooking(input: z.infer<typeof bookingSchema>) {
     }
     totalPrice = Math.round(totalPrice * 100) / 100;
 
-    const checkInToken = generateCheckInToken();
-
     const booking = await tx.booking.create({
       data: {
         guestId: guest.id,
@@ -85,7 +80,6 @@ export async function createBooking(input: z.infer<typeof bookingSchema>) {
         checkOutDate,
         totalPrice,
         status: "CONFIRMED",
-        checkInToken,
       },
     });
 
@@ -101,6 +95,8 @@ export async function createBooking(input: z.infer<typeof bookingSchema>) {
 
     return booking;
   });
+
+  await generateCheckInToken(result.id);
 
   return result;
 }
