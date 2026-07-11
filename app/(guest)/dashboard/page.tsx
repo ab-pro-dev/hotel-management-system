@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Download, Star, Award } from "lucide-react";
 import ReviewForm from "@/components/review-form";
 import ServiceRequests from "@/components/service-requests";
+import CancelBookingButton from "@/components/cancel-booking-button";
 
 export const metadata = {
   title: "My Dashboard",
@@ -141,6 +142,14 @@ export default async function GuestDashboard() {
                         width={160}
                         height={160}
                         className="rounded-lg border"
+                      />
+                    </div>
+                  )}
+                  {booking.status === "CONFIRMED" && (
+                    <div className="pt-2">
+                      <CancelBookingButton
+                        bookingId={booking.id}
+                        checkInDate={booking.checkInDate.toISOString()}
                       />
                     </div>
                   )}

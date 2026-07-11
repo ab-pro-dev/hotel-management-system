@@ -45,14 +45,15 @@ model Property {
 }
 
 model RoomType {
-  id          String   @id @default(cuid())
+  id          String      @id @default(cuid())
   title       String
   description String
   basePrice   Decimal
   capacity    Int
-  property    Property @relation(fields: [propertyId], references: [id])
+  property    Property    @relation(fields: [propertyId], references: [id])
   propertyId  String
   rooms       Room[]
+  waitlist    Waitlist[]
 }
 
 model Room {
@@ -157,4 +158,15 @@ model Coupon {
 enum DiscountType {
   PERCENT
   FLAT
+}
+
+model Waitlist {
+  id               String   @id @default(cuid())
+  guestEmail       String
+  roomType         RoomType @relation(fields: [roomTypeId], references: [id])
+  roomTypeId       String
+  requestedCheckIn DateTime
+  requestedCheckOut DateTime
+  notified         Boolean  @default(false)
+  createdAt        DateTime @default(now())
 }

@@ -2,9 +2,11 @@
 
 import { z } from "zod";
 import { Role } from "@prisma/client";
+import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import { calculateRoomPrice } from "@/lib/pricing";
 import { generateCheckInToken } from "./qr-checkin";
+import { pusherServer } from "@/lib/pusher-server";
 import { randomBytes } from "crypto";
 
 const bookingSchema = z.object({
@@ -47,7 +49,7 @@ export async function createBooking(input: z.infer<typeof bookingSchema>) {
     });
 
     if (!availableRoom) {
-      throw new Error("No rooms available for the selected dates");
+      return { waitlist: true, roomTypeId: data.roomTypeId, guestEmail: data.guestEmail, checkInDate, checkOutDate };
     }
 
     const guest = await tx.user.upsert({
@@ -120,7 +122,87 @@ export async function createBooking(input: z.infer<typeof bookingSchema>) {
     return booking;
   });
 
+  if (result && "waitlist" in result) {
+    return result;
+  }
+
   await generateCheckInToken(result.id);
+
+  return result;
+}
+
+export async function cancelBooking(bookingId: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: { payment: true },
+  });
+
+  if (!booking) throw new Error("Booking not found");
+  if (booking.guestId !== session.user.id) throw new Error("Unauthorized");
+  if (booking.status !== "CONFIRMED") {
+    throw new Error("Only CONFIRMED bookings can be cancelled");
+  }
+
+  const now = new Date();
+  const checkIn = new Date(booking.checkInDate);
+  const hoursUntilCheckIn = (checkIn.getTime() - now.getTime()) / (1000 * 60 * 60);
+  const isWithin48Hours = hoursUntilCheckIn <= 48;
+
+  const refundAmount = isWithin48Hours
+    ? Math.round(Number(booking.totalPrice) * 0.5 * 100) / 100
+    : Number(booking.totalPrice);
+
+  const result = await prisma.$transaction(async (tx) => {
+    const updatedBooking = await tx.booking.update({
+      where: { id: bookingId },
+      data: { status: "CANCELLED" },
+    });
+
+    if (booking.payment) {
+      await tx.payment.update({
+        where: { id: booking.payment.id },
+        data: {
+          status: "REFUNDED",
+          amount: refundAmount,
+        },
+      });
+    }
+
+    return { updatedBooking, refundAmount, isWithin48Hours };
+  });
+
+  const matchingRoom = await prisma.room.findUnique({
+    where: { id: booking.roomId },
+    select: { roomTypeId: true },
+  });
+
+  if (matchingRoom) {
+    const waitlistEntries = await prisma.waitlist.findMany({
+      where: {
+        roomTypeId: matchingRoom.roomTypeId,
+        notified: false,
+        requestedCheckIn: { lte: booking.checkOutDate },
+        requestedCheckOut: { gte: booking.checkInDate },
+      },
+    });
+
+    for (const entry of waitlistEntries) {
+      await pusherServer.trigger("waitlist", "room-available", {
+        guestEmail: entry.guestEmail,
+        roomTypeId: matchingRoom.roomTypeId,
+        requestedCheckIn: entry.requestedCheckIn.toISOString(),
+        requestedCheckOut: entry.requestedCheckOut.toISOString(),
+      });
+
+      await prisma.waitlist.update({
+        where: { id: entry.id },
+        data: { notified: true },
+      });
+    }
+  }
 
   return result;
 }
