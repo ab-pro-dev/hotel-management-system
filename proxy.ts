@@ -13,9 +13,25 @@ export default auth((req) => {
     }
   }
 
+  if (pathname.startsWith("/reception")) {
+    if (!role || !["RECEPTIONIST", "HOUSEKEEPER", "ADMIN"].includes(role)) {
+      const loginUrl = new URL("/login", req.nextUrl.origin);
+      loginUrl.searchParams.set("callbackUrl", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
+  if (pathname.startsWith("/housekeeping")) {
+    if (!role || !["RECEPTIONIST", "HOUSEKEEPER", "ADMIN"].includes(role)) {
+      const loginUrl = new URL("/login", req.nextUrl.origin);
+      loginUrl.searchParams.set("callbackUrl", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
   return NextResponse.next();
 });
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/reception/:path*", "/housekeeping/:path*"],
 };
