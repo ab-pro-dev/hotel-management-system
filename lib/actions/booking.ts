@@ -13,6 +13,7 @@ const bookingSchema = z.object({
   checkOutDate: z.string().min(1, "Check-out date is required"),
   guestEmail: z.string().email("Valid email is required"),
   guestName: z.string().min(1, "Guest name is required"),
+  couponCode: z.string().optional(),
 });
 
 export async function createBooking(input: z.infer<typeof bookingSchema>) {
@@ -71,6 +72,29 @@ export async function createBooking(input: z.infer<typeof bookingSchema>) {
       current.setDate(current.getDate() + 1);
     }
     totalPrice = Math.round(totalPrice * 100) / 100;
+
+    let discountAmount = 0;
+    if (data.couponCode) {
+      const coupon = await tx.coupon.findUnique({
+        where: { code: data.couponCode.toUpperCase() },
+      });
+      if (!coupon) throw new Error("Invalid coupon code");
+      if (new Date() > coupon.expiresAt) throw new Error("This coupon has expired");
+      if (coupon.usedCount >= coupon.maxUses) throw new Error("This coupon has reached its usage limit");
+
+      if (coupon.discountType === "PERCENT") {
+        discountAmount = (totalPrice * Number(coupon.discountValue)) / 100;
+      } else {
+        discountAmount = Math.min(Number(coupon.discountValue), totalPrice);
+      }
+      discountAmount = Math.round(discountAmount * 100) / 100;
+      totalPrice = Math.round((totalPrice - discountAmount) * 100) / 100;
+
+      await tx.coupon.update({
+        where: { id: coupon.id },
+        data: { usedCount: { increment: 1 } },
+      });
+    }
 
     const booking = await tx.booking.create({
       data: {

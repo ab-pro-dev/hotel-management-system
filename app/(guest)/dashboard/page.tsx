@@ -5,7 +5,7 @@ import QRCode from "qrcode";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Download, Star } from "lucide-react";
+import { Download, Star, Award } from "lucide-react";
 import ReviewForm from "@/components/review-form";
 import ServiceRequests from "@/components/service-requests";
 
@@ -17,7 +17,11 @@ export default async function GuestDashboard() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const [upcomingBookings, pastBookings] = await Promise.all([
+  const [guest, upcomingBookings, pastBookings] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { loyaltyPoints: true, loyaltyTier: true },
+    }),
     prisma.booking.findMany({
       where: {
         guestId: session.user.id,
@@ -73,6 +77,31 @@ export default async function GuestDashboard() {
         <h1 className="text-2xl font-bold">My Dashboard</h1>
         <p className="text-muted-foreground">Welcome back, {session.user.name || "Guest"}</p>
       </div>
+
+      {guest && (
+        <Card>
+          <CardContent className="flex items-center gap-6 py-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+              <Award className="h-7 w-7 text-primary" />
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-bold">{guest.loyaltyPoints.toLocaleString()} pts</span>
+                <Badge variant="secondary" className="text-xs">
+                  {guest.loyaltyTier}
+                </Badge>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {guest.loyaltyTier === "GOLD"
+                  ? "Top tier — enjoy exclusive perks!"
+                  : guest.loyaltyTier === "SILVER"
+                    ? `${(10000 - guest.loyaltyPoints).toLocaleString()} pts to Gold`
+                    : `${(3000 - guest.loyaltyPoints).toLocaleString()} pts to Silver`}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <section className="space-y-4">
         <h2 className="text-lg font-semibold">Upcoming Stays</h2>

@@ -58,21 +58,40 @@ export async function checkOutGuest(bookingId: string) {
     throw new Error("Booking must be CHECKED_IN to check out");
   }
 
-  const [updatedBooking, updatedRoom] = await prisma.$transaction([
-    prisma.booking.update({
-      where: { id: bookingId },
-      data: { status: "CHECKED_OUT" },
-    }),
-    prisma.room.update({
-      where: { id: booking.roomId },
-      data: { status: "DIRTY" },
-    }),
-  ]);
+  const pointsEarned = Math.floor(Number(booking.totalPrice));
 
-  await pusherServer.trigger("rooms", "room-status-changed", {
-    roomId: updatedRoom.id,
-    status: updatedRoom.status,
+  const result = await prisma.$transaction(async (tx) => {
+    const [updatedBooking, updatedRoom] = await Promise.all([
+      tx.booking.update({
+        where: { id: bookingId },
+        data: { status: "CHECKED_OUT" },
+      }),
+      tx.room.update({
+        where: { id: booking.roomId },
+        data: { status: "DIRTY" },
+      }),
+    ]);
+
+    const guest = await tx.user.findUnique({ where: { id: booking.guestId } });
+    if (guest) {
+      const newPoints = guest.loyaltyPoints + pointsEarned;
+      let newTier = guest.loyaltyTier;
+      if (newPoints >= 10000) newTier = "GOLD";
+      else if (newPoints >= 3000) newTier = "SILVER";
+
+      await tx.user.update({
+        where: { id: guest.id },
+        data: { loyaltyPoints: newPoints, loyaltyTier: newTier },
+      });
+    }
+
+    return { updatedBooking, updatedRoom, pointsEarned };
   });
 
-  return updatedBooking;
+  await pusherServer.trigger("rooms", "room-status-changed", {
+    roomId: result.updatedRoom.id,
+    status: result.updatedRoom.status,
+  });
+
+  return result.updatedBooking;
 }

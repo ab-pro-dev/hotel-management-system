@@ -12,13 +12,15 @@ datasource db {
 }
 
 model User {
-  id           String    @id @default(cuid())
-  name         String
-  email        String    @unique
-  passwordHash String
-  role         Role      @default(GUEST)
-  bookings     Booking[]
-  createdAt    DateTime  @default(now())
+  id            String      @id @default(cuid())
+  name          String
+  email         String      @unique
+  passwordHash  String
+  role          Role        @default(GUEST)
+  loyaltyPoints Int         @default(0)
+  loyaltyTier   LoyaltyTier @default(BRONZE)
+  bookings      Booking[]
+  createdAt     DateTime    @default(now())
 }
 
 enum Role {
@@ -26,6 +28,12 @@ enum Role {
   RECEPTIONIST
   HOUSEKEEPER
   ADMIN
+}
+
+enum LoyaltyTier {
+  BRONZE
+  SILVER
+  GOLD
 }
 
 model Property {
@@ -133,4 +141,20 @@ model Review {
   rating    Int
   comment   String
   createdAt DateTime @default(now())
+}
+
+model Coupon {
+  id            String       @id @default(cuid())
+  code          String       @unique
+  discountType  DiscountType
+  discountValue Decimal
+  expiresAt     DateTime
+  maxUses       Int
+  usedCount     Int          @default(0)
+  createdAt     DateTime     @default(now())
+}
+
+enum DiscountType {
+  PERCENT
+  FLAT
 }

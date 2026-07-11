@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Check, CreditCard, User, Calendar, Loader2 } from "lucide-react";
+import { Check, CreditCard, User, Calendar, Loader2, Tag } from "lucide-react";
 import { createBooking } from "@/lib/actions/booking";
+import { applyCoupon, type CouponResult } from "@/lib/actions/coupon";
 
 type RoomType = {
   id: string;
@@ -26,6 +27,7 @@ type State = {
   cardNumber: string;
   expiry: string;
   cvc: string;
+  couponCode: string;
 };
 
 type Action =
@@ -184,12 +186,23 @@ function StepPayment({ state, dispatch }: { state: State; dispatch: React.Dispat
           />
         </div>
       </div>
+      <div className="space-y-2">
+        <Label htmlFor="couponCode">Coupon Code (optional)</Label>
+        <div className="flex gap-2">
+          <Input
+            id="couponCode"
+            placeholder="e.g. SUMMER20"
+            value={state.couponCode}
+            onChange={(e) => dispatch({ type: "SET_FIELD", field: "couponCode", value: e.target.value.toUpperCase() })}
+          />
+        </div>
+      </div>
       <p className="text-xs text-muted-foreground">This is a simulated payment form. No real charges will be made.</p>
     </div>
   );
 }
 
-function StepConfirm({ state, roomType }: { state: State; roomType: RoomType }) {
+function StepConfirm({ state, roomType, coupon }: { state: State; roomType: RoomType; coupon: CouponResult | null }) {
   const nights = getNights(state.checkIn, state.checkOut);
   const total = nights * roomType.basePrice;
 
@@ -208,9 +221,22 @@ function StepConfirm({ state, roomType }: { state: State; roomType: RoomType }) 
           <span className="text-sm text-muted-foreground">Guest</span>
           <span className="font-medium">{state.name || state.email}</span>
         </div>
+        {coupon && (
+          <div className="flex items-center justify-between text-sm">
+            <span className="flex items-center gap-1 text-muted-foreground">
+              <Tag className="h-3 w-3" />
+              Coupon ({coupon.code})
+            </span>
+            <span className="font-medium text-green-600">
+              -${coupon.discountAmount.toFixed(2)}
+            </span>
+          </div>
+        )}
         <div className="border-t pt-3 flex items-center justify-between">
           <span className="text-sm text-muted-foreground">Total</span>
-          <span className="text-lg font-bold">${total.toFixed(2)}</span>
+          <span className="text-lg font-bold">
+            ${(coupon ? coupon.finalTotal : total).toFixed(2)}
+          </span>
         </div>
       </div>
       <p className="text-xs text-muted-foreground text-center">
@@ -253,15 +279,36 @@ export default function BookingWizard({ roomType, initialCheckIn, initialCheckOu
     cardNumber: "",
     expiry: "",
     cvc: "",
+    couponCode: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [coupon, setCoupon] = useState<CouponResult | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [couponLoading, setCouponLoading] = useState(false);
 
   const canNext =
     (state.step === 0 && state.checkIn && state.checkOut && getNights(state.checkIn, state.checkOut) > 0) ||
     (state.step === 1 && state.name && state.email) ||
     (state.step === 2 && state.cardNumber && state.expiry && state.cvc) ||
     state.step === 3;
+
+  async function handleApplyCoupon() {
+    if (!state.couponCode.trim()) return;
+    setCouponLoading(true);
+    setCouponError(null);
+    try {
+      const nights = getNights(state.checkIn, state.checkOut);
+      const total = nights * roomType.basePrice;
+      const result = await applyCoupon({ code: state.couponCode, bookingTotal: total });
+      setCoupon(result);
+    } catch (e) {
+      setCoupon(null);
+      setCouponError(e instanceof Error ? e.message : "Invalid coupon");
+    } finally {
+      setCouponLoading(false);
+    }
+  }
 
   async function handleConfirm() {
     setLoading(true);
@@ -273,6 +320,7 @@ export default function BookingWizard({ roomType, initialCheckIn, initialCheckOu
         checkOutDate: state.checkOut,
         guestName: state.name,
         guestEmail: state.email,
+        couponCode: state.couponCode || undefined,
       });
       dispatch({ type: "NEXT" });
     } catch (e) {
@@ -305,8 +353,34 @@ export default function BookingWizard({ roomType, initialCheckIn, initialCheckOu
         <CardContent>
           {state.step === 0 && <StepDates state={state} dispatch={dispatch} roomType={roomType} />}
           {state.step === 1 && <StepDetails state={state} dispatch={dispatch} />}
-          {state.step === 2 && <StepPayment state={state} dispatch={dispatch} />}
-          {state.step === 3 && <StepConfirm state={state} roomType={roomType} />}
+          {state.step === 2 && (
+            <div className="space-y-4">
+              <StepPayment state={state} dispatch={dispatch} />
+              {state.couponCode && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleApplyCoupon}
+                    disabled={couponLoading}
+                    className="gap-1"
+                  >
+                    {couponLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Tag className="h-3 w-3" />}
+                    Apply Coupon
+                  </Button>
+                  {coupon && (
+                    <span className="text-sm text-green-600 font-medium">
+                      -${coupon.discountAmount.toFixed(2)} off
+                    </span>
+                  )}
+                  {couponError && (
+                    <span className="text-sm text-destructive">{couponError}</span>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+          {state.step === 3 && <StepConfirm state={state} roomType={roomType} coupon={coupon} />}
           {state.step === 4 && <StepSuccess />}
           {error && (
             <div className="mt-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
