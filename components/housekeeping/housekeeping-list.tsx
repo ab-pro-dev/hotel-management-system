@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cycleRoomStatus } from "@/lib/actions/housekeeping";
 import { queueAction } from "@/lib/offline-queue";
-import { Loader2, WifiOff } from "lucide-react";
+import { Loader2, WifiOff, AlertCircle, X } from "lucide-react";
 
 type Room = {
   id: string;
@@ -22,6 +22,7 @@ export default function HousekeepingList({ initialRooms }: { initialRooms: Room[
   const [rooms, setRooms] = useState(initialRooms);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
+  const [error, setError] = useState<string | null>(null);
 
   const STATUS_CYCLE: Record<string, string> = {
     DIRTY: "IN_PROGRESS",
@@ -32,6 +33,7 @@ export default function HousekeepingList({ initialRooms }: { initialRooms: Room[
     const nextStatus = STATUS_CYCLE[room.status];
     if (!nextStatus) return;
 
+    setError(null);
     setLoadingId(room.id);
 
     if (!navigator.onLine) {
@@ -54,6 +56,7 @@ export default function HousekeepingList({ initialRooms }: { initialRooms: Room[
       );
     } catch (e) {
       console.error(e);
+      setError(e instanceof Error ? e.message : "Failed to update room status.");
     } finally {
       setLoadingId(null);
     }
@@ -61,7 +64,7 @@ export default function HousekeepingList({ initialRooms }: { initialRooms: Room[
 
   const visibleRooms = rooms.filter((r) => STATUS_LABELS[r.status]);
 
-  if (visibleRooms.length === 0) {
+  if (visibleRooms.length === 0 && !error) {
     return (
       <div className="py-12 text-center text-muted-foreground">
         No rooms need cleaning.
@@ -70,7 +73,17 @@ export default function HousekeepingList({ initialRooms }: { initialRooms: Room[
   }
 
   return (
-    <div className="divide-y rounded-lg border">
+    <div className="space-y-3">
+      {error && (
+        <div className="flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span className="flex-1">{error}</span>
+          <button onClick={() => setError(null)} className="shrink-0">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+      <div className="divide-y rounded-lg border">
       {visibleRooms.map((room) => {
         const info = STATUS_LABELS[room.status];
         const isPending = pendingIds.has(room.id);
@@ -99,6 +112,7 @@ export default function HousekeepingList({ initialRooms }: { initialRooms: Room[
           </div>
         );
       })}
+      </div>
     </div>
   );
 }

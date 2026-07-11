@@ -36,6 +36,8 @@ import {
   Loader2,
   BedDouble,
   LayoutGrid,
+  AlertCircle,
+  X,
 } from "lucide-react";
 import { createRoomType, updateRoomType, deleteRoomType } from "@/lib/actions/room-type";
 import { createRoom, updateRoomStatus } from "@/lib/actions/room";
@@ -81,6 +83,7 @@ export default function ManageView({
   const [roomTypes, setRoomTypes] = useState(initialRoomTypes);
   const [rooms, setRooms] = useState(initialRooms);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const [rtDialogOpen, setRtDialogOpen] = useState(false);
   const [editingRt, setEditingRt] = useState<RoomType | null>(null);
@@ -109,6 +112,7 @@ export default function ManageView({
   }
 
   async function handleRtSubmit() {
+    setError(null);
     setSaving(true);
     try {
       if (editingRt) {
@@ -140,18 +144,25 @@ export default function ManageView({
       }
       setRtDialogOpen(false);
       router.refresh();
+    } catch (e) {
+      console.error(e);
+      setError(e instanceof Error ? e.message : "Failed to save room type.");
     } finally {
       setSaving(false);
     }
   }
 
   async function handleRtDelete(id: string) {
+    setError(null);
     setSaving(true);
     try {
       await deleteRoomType(id);
       setRoomTypes((prev) => prev.filter((rt) => rt.id !== id));
       setDeleteDialog(null);
       router.refresh();
+    } catch (e) {
+      console.error(e);
+      setError(e instanceof Error ? e.message : "Failed to delete room type.");
     } finally {
       setSaving(false);
     }
@@ -163,6 +174,7 @@ export default function ManageView({
   }
 
   async function handleRoomCreate() {
+    setError(null);
     setSaving(true);
     try {
       const created = await createRoom({
@@ -176,12 +188,16 @@ export default function ManageView({
       ]);
       setRoomDialogOpen(false);
       router.refresh();
+    } catch (e) {
+      console.error(e);
+      setError(e instanceof Error ? e.message : "Failed to create room.");
     } finally {
       setSaving(false);
     }
   }
 
   async function handleStatusChange(roomId: string, newStatus: string) {
+    setError(null);
     setSaving(true);
     try {
       await updateRoomStatus(roomId, { status: newStatus as any });
@@ -189,6 +205,9 @@ export default function ManageView({
         prev.map((r) => (r.id === roomId ? { ...r, status: newStatus } : r))
       );
       router.refresh();
+    } catch (e) {
+      console.error(e);
+      setError(e instanceof Error ? e.message : "Failed to update room status.");
     } finally {
       setSaving(false);
     }
@@ -196,6 +215,15 @@ export default function ManageView({
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span className="flex-1">{error}</span>
+          <button onClick={() => setError(null)} className="shrink-0">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
       <div className="flex gap-2 border-b">
         <button
           onClick={() => setTab("room-types")}

@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Wrench, ArrowUpDown, UserPlus, Loader2 } from "lucide-react";
+import { Wrench, ArrowUpDown, UserPlus, Loader2, AlertCircle, X } from "lucide-react";
 import { assignServiceRequest, listStaff } from "@/lib/actions/service-request";
 import { pusherClient } from "@/lib/pusher-client";
 
@@ -59,9 +59,13 @@ export default function MaintenancePanel({ initialRequests }: Props) {
   const [sortBy, setSortBy] = useState<"priority" | "createdAt">("priority");
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    listStaff().then(setStaff).catch(() => {});
+    listStaff().then(setStaff).catch((e) => {
+      console.error(e);
+      setError("Failed to load staff list.");
+    });
   }, []);
 
   useEffect(() => {
@@ -113,6 +117,7 @@ export default function MaintenancePanel({ initialRequests }: Props) {
   });
 
   async function handleAssign(requestId: string, userId: string) {
+    setError(null);
     setLoadingId(requestId);
     try {
       const assignedUserId = userId || null;
@@ -126,6 +131,9 @@ export default function MaintenancePanel({ initialRequests }: Props) {
         )
       );
       router.refresh();
+    } catch (e) {
+      console.error(e);
+      setError(e instanceof Error ? e.message : "Failed to assign request.");
     } finally {
       setLoadingId(null);
     }
@@ -151,6 +159,15 @@ export default function MaintenancePanel({ initialRequests }: Props) {
         </div>
       </CardHeader>
       <CardContent>
+        {error && (
+          <div className="mb-3 flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span className="flex-1">{error}</span>
+            <button onClick={() => setError(null)} className="shrink-0">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
         {sorted.length === 0 ? (
           <p className="text-sm text-muted-foreground">No maintenance requests.</p>
         ) : (

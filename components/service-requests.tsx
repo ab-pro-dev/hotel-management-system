@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Send, Loader2 } from "lucide-react";
+import { Send, Loader2, AlertCircle, X } from "lucide-react";
 
 type ServiceRequest = {
   id: string;
@@ -38,6 +38,7 @@ export default function ServiceRequests({
   const [type, setType] = useState<ServiceRequestType>("HOUSEKEEPING");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const TYPE_LABELS: Record<ServiceRequestType, string> = {
     HOUSEKEEPING: t("housekeeping"),
@@ -69,12 +70,14 @@ export default function ServiceRequests({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setError(null);
     setLoading(true);
     try {
       await createServiceRequest(bookingId, type, message);
       setMessage("");
     } catch (e) {
       console.error(e);
+      setError(e instanceof Error ? e.message : "Failed to send request.");
     } finally {
       setLoading(false);
     }
@@ -87,6 +90,15 @@ export default function ServiceRequests({
           <CardTitle className="text-base">{t("requestService")}</CardTitle>
         </CardHeader>
         <CardContent>
+          {error && (
+            <div className="mb-4 flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span className="flex-1">{error}</span>
+              <button onClick={() => setError(null)} className="shrink-0">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="type">{t("type")}</Label>

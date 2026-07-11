@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Plus, DollarSign, Loader2 } from "lucide-react";
+import { Trash2, Plus, DollarSign, Loader2, AlertCircle, X } from "lucide-react";
 import {
   setPriceOverride,
   removePriceOverride,
@@ -39,10 +39,12 @@ export default function PricingManager({ roomTypes }: Props) {
   const [newDate, setNewDate] = useState("");
   const [newPrice, setNewPrice] = useState("");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!selectedRoomType) return;
     setLoading(true);
+    setError(null);
     listPriceOverrides(selectedRoomType)
       .then((data) =>
         setOverrides(
@@ -53,12 +55,17 @@ export default function PricingManager({ roomTypes }: Props) {
           }))
         )
       )
-      .catch(() => setOverrides([]))
+      .catch((e) => {
+        console.error(e);
+        setOverrides([]);
+        setError("Failed to load price overrides.");
+      })
       .finally(() => setLoading(false));
   }, [selectedRoomType]);
 
   async function handleAdd() {
     if (!selectedRoomType || !newDate || !newPrice) return;
+    setError(null);
     setSaving(true);
     try {
       await setPriceOverride({
@@ -77,17 +84,24 @@ export default function PricingManager({ roomTypes }: Props) {
         }))
       );
       router.refresh();
+    } catch (e) {
+      console.error(e);
+      setError(e instanceof Error ? e.message : "Failed to set price override.");
     } finally {
       setSaving(false);
     }
   }
 
   async function handleRemove(id: string) {
+    setError(null);
     setSaving(true);
     try {
       await removePriceOverride(id);
       setOverrides((prev) => prev.filter((o) => o.id !== id));
       router.refresh();
+    } catch (e) {
+      console.error(e);
+      setError(e instanceof Error ? e.message : "Failed to remove price override.");
     } finally {
       setSaving(false);
     }
@@ -97,6 +111,15 @@ export default function PricingManager({ roomTypes }: Props) {
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span className="flex-1">{error}</span>
+          <button onClick={() => setError(null)} className="shrink-0">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
       <div className="space-y-2">
         <Label>Room Type</Label>
         <Select value={selectedRoomType} onValueChange={(v: string | null) => v && setSelectedRoomType(v)}>
