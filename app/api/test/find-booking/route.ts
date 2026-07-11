@@ -9,7 +9,7 @@ import prisma from "@/lib/prisma";
  */
 export async function POST(req: Request) {
   if (process.env.NODE_ENV === "production") {
-    return NextResponse.json({ error: "Not available" }, { status: 403 });
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
   const { email, roomTypeTitle } = await req.json();
