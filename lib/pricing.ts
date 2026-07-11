@@ -5,6 +5,22 @@ export async function calculateRoomPrice(
   checkInDate: Date,
   roomTypeId: string
 ): Promise<number> {
+  const dateOnly = new Date(checkInDate);
+  dateOnly.setHours(0, 0, 0, 0);
+
+  const override = await prisma.priceOverride.findUnique({
+    where: {
+      roomTypeId_date: {
+        roomTypeId,
+        date: dateOnly,
+      },
+    },
+  });
+
+  if (override) {
+    return Number(override.overridePrice);
+  }
+
   const day = checkInDate.getDay();
   const isWeekend = day === 5 || day === 6;
   const seasonal = isWeekend ? 1.15 : 1.0;

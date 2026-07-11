@@ -46,15 +46,16 @@ model Property {
 }
 
 model RoomType {
-  id          String      @id @default(cuid())
-  title       String
-  description String
-  basePrice   Decimal
-  capacity    Int
-  property    Property    @relation(fields: [propertyId], references: [id])
-  propertyId  String
-  rooms       Room[]
-  waitlist    Waitlist[]
+  id            String          @id @default(cuid())
+  title         String
+  description   String
+  basePrice     Decimal
+  capacity      Int
+  property      Property        @relation(fields: [propertyId], references: [id])
+  propertyId    String
+  rooms         Room[]
+  waitlist      Waitlist[]
+  priceOverrides PriceOverride[]
 }
 
 model Room {
@@ -72,6 +73,17 @@ enum RoomStatus {
   DIRTY
   IN_PROGRESS
   MAINTENANCE
+}
+
+model PriceOverride {
+  id            String   @id @default(cuid())
+  roomType      RoomType @relation(fields: [roomTypeId], references: [id])
+  roomTypeId    String
+  date          DateTime @db.Date
+  overridePrice Decimal
+  createdAt     DateTime @default(now())
+
+  @@unique([roomTypeId, date])
 }
 
 model Booking {
