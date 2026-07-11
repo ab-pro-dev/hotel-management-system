@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { Role } from "@prisma/client";
 import prisma from "@/lib/prisma";
+import { calculateRoomPrice } from "@/lib/pricing";
 import { randomBytes } from "crypto";
 
 const bookingSchema = z.object({
@@ -26,10 +27,6 @@ export async function createBooking(input: z.infer<typeof bookingSchema>) {
   if (checkOutDate <= checkInDate) {
     throw new Error("Check-out date must be after check-in date");
   }
-
-  const nights = Math.ceil(
-    (checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)
-  );
 
   const result = await prisma.$transaction(async (tx) => {
     const roomType = await tx.roomType.findUnique({
@@ -66,7 +63,18 @@ export async function createBooking(input: z.infer<typeof bookingSchema>) {
       },
     });
 
-    const totalPrice = nights * Number(roomType.basePrice);
+    let totalPrice = 0;
+    const current = new Date(checkInDate);
+    while (current < checkOutDate) {
+      totalPrice += await calculateRoomPrice(
+        Number(roomType.basePrice),
+        current,
+        data.roomTypeId
+      );
+      current.setDate(current.getDate() + 1);
+    }
+    totalPrice = Math.round(totalPrice * 100) / 100;
+
     const checkInToken = generateCheckInToken();
 
     const booking = await tx.booking.create({
