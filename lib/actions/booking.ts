@@ -62,7 +62,7 @@ export async function createBooking(input: z.infer<typeof bookingSchema>) {
         create: {
           email: data.guestEmail,
           name: data.guestName,
-          passwordHash: "",
+          passwordHash: null,
           role: Role.GUEST,
         },
       });
