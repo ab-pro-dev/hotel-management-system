@@ -21,9 +21,15 @@ export async function applyCoupon(
 ): Promise<CouponResult> {
   const { code, bookingTotal } = couponInputSchema.parse(input);
 
-  const coupon = await prisma.coupon.findUnique({
-    where: { code: code.toUpperCase() },
-  });
+  let coupon;
+  try {
+    coupon = await prisma.coupon.findUnique({
+      where: { code: code.toUpperCase() },
+    });
+  } catch (error) {
+    console.error(`[applyCoupon] Failed to look up coupon "${code}":`, error);
+    throw new Error("Failed to validate coupon. Please try again.");
+  }
 
   if (!coupon) {
     throw new Error("Invalid coupon code");

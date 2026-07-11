@@ -1,10 +1,13 @@
 "use server";
 
+import { z } from "zod";
 import { Role } from "@prisma/client";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import { pusherServer } from "@/lib/pusher-server";
 import { createNotification } from "@/lib/notifications";
+
+const bookingIdSchema = z.string().min(1, "Booking ID is required");
 
 async function requireReceptionistOrAdmin() {
   const session = await auth();
@@ -15,10 +18,11 @@ async function requireReceptionistOrAdmin() {
 }
 
 export async function checkInGuest(bookingId: string) {
+  const validBookingId = bookingIdSchema.parse(bookingId);
   await requireReceptionistOrAdmin();
 
   const booking = await prisma.booking.findUnique({
-    where: { id: bookingId },
+    where: { id: validBookingId },
     include: { room: true },
   });
 
@@ -29,7 +33,7 @@ export async function checkInGuest(bookingId: string) {
 
   const [updatedBooking, updatedRoom] = await prisma.$transaction([
     prisma.booking.update({
-      where: { id: bookingId },
+      where: { id: validBookingId },
       data: { status: "CHECKED_IN" },
     }),
     prisma.room.update({
@@ -52,10 +56,11 @@ export async function checkInGuest(bookingId: string) {
 }
 
 export async function checkOutGuest(bookingId: string) {
+  const validBookingId = bookingIdSchema.parse(bookingId);
   await requireReceptionistOrAdmin();
 
   const booking = await prisma.booking.findUnique({
-    where: { id: bookingId },
+    where: { id: validBookingId },
     include: { room: true },
   });
 
@@ -69,7 +74,7 @@ export async function checkOutGuest(bookingId: string) {
   const result = await prisma.$transaction(async (tx) => {
     const [updatedBooking, updatedRoom] = await Promise.all([
       tx.booking.update({
-        where: { id: bookingId },
+        where: { id: validBookingId },
         data: { status: "CHECKED_OUT" },
       }),
       tx.room.update({

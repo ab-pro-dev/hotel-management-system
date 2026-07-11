@@ -27,39 +27,61 @@ export async function setPriceOverride(input: z.infer<typeof overrideSchema>) {
   const dateOnly = new Date(data.date);
   dateOnly.setHours(0, 0, 0, 0);
 
-  const override = await prisma.priceOverride.upsert({
-    where: {
-      roomTypeId_date: {
+  try {
+    const override = await prisma.priceOverride.upsert({
+      where: {
+        roomTypeId_date: {
+          roomTypeId: data.roomTypeId,
+          date: dateOnly,
+        },
+      },
+      update: { overridePrice: data.overridePrice },
+      create: {
         roomTypeId: data.roomTypeId,
         date: dateOnly,
+        overridePrice: data.overridePrice,
       },
-    },
-    update: { overridePrice: data.overridePrice },
-    create: {
-      roomTypeId: data.roomTypeId,
-      date: dateOnly,
-      overridePrice: data.overridePrice,
-    },
-  });
+    });
 
-  await logAudit({ userId: user.id, action: "SET_OVERRIDE", targetTable: "PriceOverride", targetId: override.id, metadata: { roomTypeId: data.roomTypeId, date: data.date, overridePrice: data.overridePrice } });
-  return override;
+    await logAudit({ userId: user.id, action: "SET_OVERRIDE", targetTable: "PriceOverride", targetId: override.id, metadata: { roomTypeId: data.roomTypeId, date: data.date, overridePrice: data.overridePrice } });
+    return override;
+  } catch (error) {
+    console.error(`[setPriceOverride] Failed to set override for room type ${data.roomTypeId}:`, error);
+    throw new Error("Failed to set price override. Please try again.");
+  }
 }
+
+const deleteOverrideSchema = z.string().min(1, "Override ID is required");
+const listOverridesSchema = z.string().min(1, "Room type ID is required");
 
 export async function removePriceOverride(id: string) {
   const user = await requireAdmin();
-  const override = await prisma.priceOverride.delete({ where: { id } });
-  await logAudit({ userId: user.id, action: "REMOVE_OVERRIDE", targetTable: "PriceOverride", targetId: override.id, metadata: { roomTypeId: override.roomTypeId, date: override.date.toISOString() } });
-  return override;
+  const validId = deleteOverrideSchema.parse(id);
+
+  try {
+    const override = await prisma.priceOverride.delete({ where: { id: validId } });
+    await logAudit({ userId: user.id, action: "REMOVE_OVERRIDE", targetTable: "PriceOverride", targetId: override.id, metadata: { roomTypeId: override.roomTypeId, date: override.date.toISOString() } });
+    return override;
+  } catch (error) {
+    console.error(`[removePriceOverride] Failed to remove override ${validId}:`, error);
+    throw new Error("Failed to remove price override. Please try again.");
+  }
 }
 
 export async function listPriceOverrides(roomTypeId: string) {
+  const validRoomTypeId = listOverridesSchema.parse(roomTypeId);
   await requireAdmin();
-  return prisma.priceOverride.findMany({
-    where: {
-      roomTypeId,
-      date: { gte: new Date() },
-    },
-    orderBy: { date: "asc" },
-  });
+
+  try {
+    return await prisma.priceOverride.findMany({
+      where: {
+        roomTypeId: validRoomTypeId,
+        date: { gte: new Date() },
+      },
+      orderBy: { date: "asc" },
+    });
+  } catch (error) {
+    console.error(`[listPriceOverrides] Failed to list overrides for room type ${validRoomTypeId}:`, error);
+    throw new Error("Failed to load price overrides. Please try again.");
+  }
 }

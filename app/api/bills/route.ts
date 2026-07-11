@@ -1,7 +1,12 @@
 import { NextRequest } from "next/server";
+import { z } from "zod";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import { jsPDF } from "jspdf";
+
+const bookingIdQuerySchema = z.object({
+  bookingId: z.string().min(1, "bookingId is required"),
+});
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -9,10 +14,15 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const bookingId = req.nextUrl.searchParams.get("bookingId");
-  if (!bookingId) {
-    return Response.json({ error: "bookingId is required" }, { status: 400 });
+  const parsed = bookingIdQuerySchema.safeParse({
+    bookingId: req.nextUrl.searchParams.get("bookingId"),
+  });
+
+  if (!parsed.success) {
+    return Response.json({ error: parsed.error.issues[0].message }, { status: 400 });
   }
+
+  const { bookingId } = parsed.data;
 
   const booking = await prisma.booking.findUnique({
     where: { id: bookingId },

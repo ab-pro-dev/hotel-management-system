@@ -32,12 +32,17 @@ export async function joinWaitlist(input: z.infer<typeof waitlistSchema>) {
     throw new Error("You are already on the waitlist for these dates");
   }
 
-  return prisma.waitlist.create({
-    data: {
-      guestEmail: data.guestEmail,
-      roomTypeId: data.roomTypeId,
-      requestedCheckIn: new Date(data.requestedCheckIn),
-      requestedCheckOut: new Date(data.requestedCheckOut),
-    },
-  });
+  try {
+    return await prisma.waitlist.create({
+      data: {
+        guestEmail: data.guestEmail,
+        roomTypeId: data.roomTypeId,
+        requestedCheckIn: new Date(data.requestedCheckIn),
+        requestedCheckOut: new Date(data.requestedCheckOut),
+      },
+    });
+  } catch (error) {
+    console.error(`[joinWaitlist] Failed to join waitlist for ${data.guestEmail}:`, error);
+    throw new Error("Failed to join waitlist. Please try again.");
+  }
 }

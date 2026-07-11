@@ -30,111 +30,127 @@ export async function createBooking(input: z.infer<typeof bookingSchema>) {
     throw new Error("Check-out date must be after check-in date");
   }
 
-  const result = await prisma.$transaction(async (tx) => {
-    const roomType = await tx.roomType.findUnique({
-      where: { id: data.roomTypeId },
-    });
-    if (!roomType) throw new Error("Room type not found");
+  let result;
+  try {
+    result = await prisma.$transaction(async (tx) => {
+      const roomType = await tx.roomType.findUnique({
+        where: { id: data.roomTypeId },
+      });
+      if (!roomType) throw new Error("Room type not found");
 
-    const availableRoom = await tx.room.findFirst({
-      where: {
-        roomTypeId: data.roomTypeId,
-        status: "AVAILABLE",
-        bookings: {
-          none: {
-            status: { in: ["PENDING", "CONFIRMED", "CHECKED_IN"] },
-            checkInDate: { lt: checkOutDate },
-            checkOutDate: { gt: checkInDate },
+      const availableRoom = await tx.room.findFirst({
+        where: {
+          roomTypeId: data.roomTypeId,
+          status: "AVAILABLE",
+          bookings: {
+            none: {
+              status: { in: ["PENDING", "CONFIRMED", "CHECKED_IN"] },
+              checkInDate: { lt: checkOutDate },
+              checkOutDate: { gt: checkInDate },
+            },
           },
         },
-      },
-    });
-
-    if (!availableRoom) {
-      return { waitlist: true, roomTypeId: data.roomTypeId, guestEmail: data.guestEmail, checkInDate, checkOutDate };
-    }
-
-    const guest = await tx.user.upsert({
-      where: { email: data.guestEmail },
-      update: { name: data.guestName },
-      create: {
-        email: data.guestEmail,
-        name: data.guestName,
-        passwordHash: "",
-        role: Role.GUEST,
-      },
-    });
-
-    let totalPrice = 0;
-    const current = new Date(checkInDate);
-    while (current < checkOutDate) {
-      totalPrice += await calculateRoomPrice(
-        Number(roomType.basePrice),
-        current,
-        data.roomTypeId
-      );
-      current.setDate(current.getDate() + 1);
-    }
-    totalPrice = Math.round(totalPrice * 100) / 100;
-
-    let discountAmount = 0;
-    if (data.couponCode) {
-      const coupon = await tx.coupon.findUnique({
-        where: { code: data.couponCode.toUpperCase() },
       });
-      if (!coupon) throw new Error("Invalid coupon code");
-      if (new Date() > coupon.expiresAt) throw new Error("This coupon has expired");
-      if (coupon.usedCount >= coupon.maxUses) throw new Error("This coupon has reached its usage limit");
 
-      if (coupon.discountType === "PERCENT") {
-        discountAmount = (totalPrice * Number(coupon.discountValue)) / 100;
-      } else {
-        discountAmount = Math.min(Number(coupon.discountValue), totalPrice);
+      if (!availableRoom) {
+        return { waitlist: true, roomTypeId: data.roomTypeId, guestEmail: data.guestEmail, checkInDate, checkOutDate };
       }
-      discountAmount = Math.round(discountAmount * 100) / 100;
-      totalPrice = Math.round((totalPrice - discountAmount) * 100) / 100;
 
-      await tx.coupon.update({
-        where: { id: coupon.id },
-        data: { usedCount: { increment: 1 } },
+      const guest = await tx.user.upsert({
+        where: { email: data.guestEmail },
+        update: { name: data.guestName },
+        create: {
+          email: data.guestEmail,
+          name: data.guestName,
+          passwordHash: "",
+          role: Role.GUEST,
+        },
       });
-    }
 
-    const booking = await tx.booking.create({
-      data: {
-        guestId: guest.id,
-        roomId: availableRoom.id,
-        checkInDate,
-        checkOutDate,
-        totalPrice,
-        status: "CONFIRMED",
-      },
+      let totalPrice = 0;
+      const current = new Date(checkInDate);
+      while (current < checkOutDate) {
+        totalPrice += await calculateRoomPrice(
+          Number(roomType.basePrice),
+          current,
+          data.roomTypeId
+        );
+        current.setDate(current.getDate() + 1);
+      }
+      totalPrice = Math.round(totalPrice * 100) / 100;
+
+      let discountAmount = 0;
+      if (data.couponCode) {
+        const coupon = await tx.coupon.findUnique({
+          where: { code: data.couponCode.toUpperCase() },
+        });
+        if (!coupon) throw new Error("Invalid coupon code");
+        if (new Date() > coupon.expiresAt) throw new Error("This coupon has expired");
+        if (coupon.usedCount >= coupon.maxUses) throw new Error("This coupon has reached its usage limit");
+
+        if (coupon.discountType === "PERCENT") {
+          discountAmount = (totalPrice * Number(coupon.discountValue)) / 100;
+        } else {
+          discountAmount = Math.min(Number(coupon.discountValue), totalPrice);
+        }
+        discountAmount = Math.round(discountAmount * 100) / 100;
+        totalPrice = Math.round((totalPrice - discountAmount) * 100) / 100;
+
+        await tx.coupon.update({
+          where: { id: coupon.id },
+          data: { usedCount: { increment: 1 } },
+        });
+      }
+
+      const booking = await tx.booking.create({
+        data: {
+          guestId: guest.id,
+          roomId: availableRoom.id,
+          checkInDate,
+          checkOutDate,
+          totalPrice,
+          status: "CONFIRMED",
+        },
+      });
+
+      await tx.payment.create({
+        data: {
+          bookingId: booking.id,
+          amount: totalPrice,
+          paymentMethod: "card",
+          status: "PAID",
+          transactionId: `txn_${randomBytes(12).toString("hex")}`,
+        },
+      });
+
+      return booking;
     });
-
-    await tx.payment.create({
-      data: {
-        bookingId: booking.id,
-        amount: totalPrice,
-        paymentMethod: "card",
-        status: "PAID",
-        transactionId: `txn_${randomBytes(12).toString("hex")}`,
-      },
-    });
-
-    return booking;
-  });
+  } catch (error) {
+    console.error(`[createBooking] Failed to create booking for ${data.guestEmail}:`, error);
+    throw new Error("Failed to create booking. Please try again.");
+  }
 
   if (result && "waitlist" in result) {
     return result;
   }
 
-  await generateCheckInToken(result.id);
+  try {
+    await generateCheckInToken(result.id);
+  } catch (error) {
+    console.error(`[createBooking] Failed to generate check-in token for booking ${result.id}:`, error);
+    throw new Error("Failed to finalize booking. Please try again.");
+  }
 
   const accessToken = randomBytes(32).toString("hex");
-  await prisma.booking.update({
-    where: { id: result.id },
-    data: { bookingAccessToken: accessToken },
-  });
+  try {
+    await prisma.booking.update({
+      where: { id: result.id },
+      data: { bookingAccessToken: accessToken },
+    });
+  } catch (error) {
+    console.error(`[createBooking] Failed to set access token for booking ${result.id}:`, error);
+    throw new Error("Failed to finalize booking. Please try again.");
+  }
 
   const guestId = result.guestId;
   const bookingWithRoom = await prisma.booking.findUnique({
@@ -153,11 +169,12 @@ export async function createBooking(input: z.infer<typeof bookingSchema>) {
 }
 
 export async function cancelBooking(bookingId: string) {
+  const validBookingId = z.string().min(1, "Booking ID is required").parse(bookingId);
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
   const booking = await prisma.booking.findUnique({
-    where: { id: bookingId },
+    where: { id: validBookingId },
     include: { payment: true },
   });
 
@@ -178,53 +195,63 @@ export async function cancelBooking(bookingId: string) {
     ? Math.round(Number(booking.totalPrice) * 0.5 * 100) / 100
     : Number(booking.totalPrice);
 
-  const result = await prisma.$transaction(async (tx) => {
-    const updatedBooking = await tx.booking.update({
-      where: { id: bookingId },
-      data: { status: "CANCELLED" },
+  let result;
+  try {
+    result = await prisma.$transaction(async (tx) => {
+      const updatedBooking = await tx.booking.update({
+        where: { id: validBookingId },
+        data: { status: "CANCELLED" },
+      });
+
+      if (booking.payment) {
+        await tx.payment.update({
+          where: { id: booking.payment.id },
+          data: {
+            status: "REFUNDED",
+            amount: refundAmount,
+          },
+        });
+      }
+
+      return { updatedBooking, refundAmount, isWithin48Hours };
+    });
+  } catch (error) {
+    console.error(`[cancelBooking] Failed to cancel booking ${validBookingId}:`, error);
+    throw new Error("Failed to cancel booking. Please try again.");
+  }
+
+  try {
+    const matchingRoom = await prisma.room.findUnique({
+      where: { id: booking.roomId },
+      select: { roomTypeId: true },
     });
 
-    if (booking.payment) {
-      await tx.payment.update({
-        where: { id: booking.payment.id },
-        data: {
-          status: "REFUNDED",
-          amount: refundAmount,
+    if (matchingRoom) {
+      const waitlistEntries = await prisma.waitlist.findMany({
+        where: {
+          roomTypeId: matchingRoom.roomTypeId,
+          notified: false,
+          requestedCheckIn: { lte: booking.checkOutDate },
+          requestedCheckOut: { gte: booking.checkInDate },
         },
       });
+
+      for (const entry of waitlistEntries) {
+        await pusherServer.trigger("waitlist", "room-available", {
+          guestEmail: entry.guestEmail,
+          roomTypeId: matchingRoom.roomTypeId,
+          requestedCheckIn: entry.requestedCheckIn.toISOString(),
+          requestedCheckOut: entry.requestedCheckOut.toISOString(),
+        });
+
+        await prisma.waitlist.update({
+          where: { id: entry.id },
+          data: { notified: true },
+        });
+      }
     }
-
-    return { updatedBooking, refundAmount, isWithin48Hours };
-  });
-
-  const matchingRoom = await prisma.room.findUnique({
-    where: { id: booking.roomId },
-    select: { roomTypeId: true },
-  });
-
-  if (matchingRoom) {
-    const waitlistEntries = await prisma.waitlist.findMany({
-      where: {
-        roomTypeId: matchingRoom.roomTypeId,
-        notified: false,
-        requestedCheckIn: { lte: booking.checkOutDate },
-        requestedCheckOut: { gte: booking.checkInDate },
-      },
-    });
-
-    for (const entry of waitlistEntries) {
-      await pusherServer.trigger("waitlist", "room-available", {
-        guestEmail: entry.guestEmail,
-        roomTypeId: matchingRoom.roomTypeId,
-        requestedCheckIn: entry.requestedCheckIn.toISOString(),
-        requestedCheckOut: entry.requestedCheckOut.toISOString(),
-      });
-
-      await prisma.waitlist.update({
-        where: { id: entry.id },
-        data: { notified: true },
-      });
-    }
+  } catch (error) {
+    console.error(`[cancelBooking] Failed to process waitlist after cancelling booking ${validBookingId}:`, error);
   }
 
   await createNotification(

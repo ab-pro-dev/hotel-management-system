@@ -27,16 +27,27 @@ async function requireAdmin() {
 export async function createRoomType(data: z.infer<typeof roomTypeSchema>) {
   const user = await requireAdmin();
   const parsed = roomTypeSchema.parse(data);
-  const roomType = await prisma.roomType.create({ data: parsed });
-  await logAudit({ userId: user.id, action: "CREATE", targetTable: "RoomType", targetId: roomType.id, metadata: { title: roomType.title, basePrice: Number(roomType.basePrice) } });
-  return roomType;
+
+  try {
+    const roomType = await prisma.roomType.create({ data: parsed });
+    await logAudit({ userId: user.id, action: "CREATE", targetTable: "RoomType", targetId: roomType.id, metadata: { title: roomType.title, basePrice: Number(roomType.basePrice) } });
+    return roomType;
+  } catch (error) {
+    console.error(`[createRoomType] Failed to create room type:`, error);
+    throw new Error("Failed to create room type. Please try again.");
+  }
 }
 
 export async function listRoomTypes(propertyId?: string) {
-  return prisma.roomType.findMany({
-    where: propertyId ? { propertyId } : undefined,
-    include: { rooms: true },
-  });
+  try {
+    return await prisma.roomType.findMany({
+      where: propertyId ? { propertyId } : undefined,
+      include: { rooms: true },
+    });
+  } catch (error) {
+    console.error(`[listRoomTypes] Failed to list room types:`, error);
+    throw new Error("Failed to load room types. Please try again.");
+  }
 }
 
 export async function updateRoomType(
@@ -45,14 +56,29 @@ export async function updateRoomType(
 ) {
   const user = await requireAdmin();
   const parsed = roomTypeUpdateSchema.parse(data);
-  const roomType = await prisma.roomType.update({ where: { id }, data: parsed });
-  await logAudit({ userId: user.id, action: "UPDATE", targetTable: "RoomType", targetId: roomType.id, metadata: parsed });
-  return roomType;
+
+  try {
+    const roomType = await prisma.roomType.update({ where: { id }, data: parsed });
+    await logAudit({ userId: user.id, action: "UPDATE", targetTable: "RoomType", targetId: roomType.id, metadata: parsed });
+    return roomType;
+  } catch (error) {
+    console.error(`[updateRoomType] Failed to update room type ${id}:`, error);
+    throw new Error("Failed to update room type. Please try again.");
+  }
 }
+
+const deleteRoomTypeSchema = z.string().min(1, "Room type ID is required");
 
 export async function deleteRoomType(id: string) {
   const user = await requireAdmin();
-  const roomType = await prisma.roomType.delete({ where: { id } });
-  await logAudit({ userId: user.id, action: "DELETE", targetTable: "RoomType", targetId: roomType.id, metadata: { title: roomType.title } });
-  return roomType;
+  const validId = deleteRoomTypeSchema.parse(id);
+
+  try {
+    const roomType = await prisma.roomType.delete({ where: { id: validId } });
+    await logAudit({ userId: user.id, action: "DELETE", targetTable: "RoomType", targetId: roomType.id, metadata: { title: roomType.title } });
+    return roomType;
+  } catch (error) {
+    console.error(`[deleteRoomType] Failed to delete room type ${validId}:`, error);
+    throw new Error("Failed to delete room type. Please try again.");
+  }
 }

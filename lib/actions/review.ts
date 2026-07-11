@@ -38,11 +38,16 @@ export async function submitReview(input: z.infer<typeof reviewSchema>) {
     throw new Error("You have already reviewed this booking");
   }
 
-  return prisma.review.create({
-    data: {
-      bookingId: data.bookingId,
-      rating: data.rating,
-      comment: data.comment,
-    },
-  });
+  try {
+    return await prisma.review.create({
+      data: {
+        bookingId: data.bookingId,
+        rating: data.rating,
+        comment: data.comment,
+      },
+    });
+  } catch (error) {
+    console.error(`[submitReview] Failed to submit review for booking ${data.bookingId}:`, error);
+    throw new Error("Failed to submit review. Please try again.");
+  }
 }

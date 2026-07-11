@@ -1,14 +1,21 @@
 "use server";
 
 import { NextResponse } from "next/server";
+import { z } from "zod";
+import { RoomStatus } from "@prisma/client";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import { pusherServer } from "@/lib/pusher-server";
 
-const STATUS_CYCLE: Record<string, string> = {
+const STATUS_CYCLE: Record<string, RoomStatus> = {
   DIRTY: "IN_PROGRESS",
   IN_PROGRESS: "AVAILABLE",
 };
+
+const statusUpdateSchema = z.object({
+  roomId: z.string().min(1, "Room ID is required"),
+  status: z.nativeEnum(RoomStatus, { error: "Invalid status" }),
+});
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -17,11 +24,13 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { roomId, status } = body;
+  const parsed = statusUpdateSchema.safeParse(body);
 
-  if (!roomId || !status) {
-    return NextResponse.json({ error: "roomId and status required" }, { status: 400 });
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
   }
+
+  const { roomId, status } = parsed.data;
 
   const room = await prisma.room.findUnique({ where: { id: roomId } });
   if (!room) {
@@ -37,7 +46,7 @@ export async function POST(request: Request) {
 
   const updated = await prisma.room.update({
     where: { id: roomId },
-    data: { status: status as any },
+    data: { status },
   });
 
   await pusherServer.trigger("rooms", "room-status-changed", {
