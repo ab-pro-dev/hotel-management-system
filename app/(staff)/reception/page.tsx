@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import prisma from "@/lib/prisma";
 import RoomGrid from "@/components/reception/room-grid";
+import StaffServiceRequests from "@/components/reception/service-requests-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -43,8 +44,34 @@ async function getRooms() {
   }));
 }
 
+async function getServiceRequests() {
+  const requests = await prisma.serviceRequest.findMany({
+    where: { status: { not: "RESOLVED" } },
+    include: {
+      booking: {
+        include: {
+          room: { select: { roomNumber: true } },
+          guest: { select: { name: true } },
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return requests.map((r) => ({
+    id: r.id,
+    bookingId: r.bookingId,
+    type: r.type,
+    message: r.message,
+    status: r.status,
+    createdAt: r.createdAt.toISOString(),
+    guestName: r.booking.guest.name,
+    roomNumber: r.booking.room.roomNumber,
+  }));
+}
+
 export default async function ReceptionPage() {
-  const rooms = await getRooms();
+  const [rooms, serviceRequests] = await Promise.all([getRooms(), getServiceRequests()]);
 
   return (
     <div className="space-y-6">
@@ -53,6 +80,7 @@ export default async function ReceptionPage() {
         <p className="text-muted-foreground">Live status of all hotel rooms.</p>
       </div>
       <RoomGrid initialRooms={rooms} />
+      <StaffServiceRequests initialRequests={serviceRequests} />
     </div>
   );
 }

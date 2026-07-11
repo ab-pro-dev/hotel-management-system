@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Download, Star } from "lucide-react";
 import ReviewForm from "@/components/review-form";
+import ServiceRequests from "@/components/service-requests";
 
 export const metadata = {
   title: "My Dashboard",
@@ -49,6 +50,21 @@ export default async function GuestDashboard() {
         { width: 160, margin: 1 }
       );
     }
+  }
+
+  const checkedInBooking = upcomingBookings.find((b) => b.status === "CHECKED_IN");
+  let serviceRequests: Array<{
+    id: string;
+    type: "HOUSEKEEPING" | "FRONT_DESK" | "MAINTENANCE";
+    message: string;
+    status: "OPEN" | "ACKNOWLEDGED" | "RESOLVED";
+    createdAt: Date;
+  }> = [];
+  if (checkedInBooking) {
+    serviceRequests = await prisma.serviceRequest.findMany({
+      where: { bookingId: checkedInBooking.id },
+      orderBy: { createdAt: "desc" },
+    });
   }
 
   return (
@@ -105,6 +121,19 @@ export default async function GuestDashboard() {
           </div>
         )}
       </section>
+
+      {checkedInBooking && (
+        <section className="space-y-4">
+          <h2 className="text-lg font-semibold">Service Requests</h2>
+          <ServiceRequests
+            bookingId={checkedInBooking.id}
+            initialRequests={serviceRequests.map((r) => ({
+              ...r,
+              createdAt: r.createdAt.toISOString(),
+            }))}
+          />
+        </section>
+      )}
 
       <section className="space-y-4">
         <h2 className="text-lg font-semibold">Past Stays</h2>

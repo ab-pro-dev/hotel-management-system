@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import prisma from "@/lib/prisma";
 import HousekeepingList from "@/components/housekeeping/housekeeping-list";
+import HousekeepingRequests from "@/components/housekeeping/housekeeping-requests";
 
 export const dynamic = "force-dynamic";
 
@@ -23,15 +24,45 @@ async function getDirtyRooms() {
   }));
 }
 
+async function getHousekeepingRequests() {
+  const requests = await prisma.serviceRequest.findMany({
+    where: {
+      type: "HOUSEKEEPING",
+      status: { not: "RESOLVED" },
+    },
+    include: {
+      booking: {
+        include: {
+          room: { select: { roomNumber: true } },
+          guest: { select: { name: true } },
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return requests.map((r) => ({
+    id: r.id,
+    bookingId: r.bookingId,
+    type: r.type,
+    message: r.message,
+    status: r.status,
+    createdAt: r.createdAt.toISOString(),
+    guestName: r.booking.guest.name,
+    roomNumber: r.booking.room.roomNumber,
+  }));
+}
+
 export default async function HousekeepingPage() {
-  const rooms = await getDirtyRooms();
+  const [rooms, serviceRequests] = await Promise.all([getDirtyRooms(), getHousekeepingRequests()]);
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Housekeeping</h1>
-        <p className="text-muted-foreground">Rooms that need cleaning.</p>
+        <p className="text-muted-foreground">Rooms that need cleaning and guest requests.</p>
       </div>
+      <HousekeepingRequests initialRequests={serviceRequests} />
       <HousekeepingList initialRooms={rooms} />
     </div>
   );
