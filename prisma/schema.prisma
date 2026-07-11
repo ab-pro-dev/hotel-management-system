@@ -102,8 +102,9 @@ model Booking {
   status          BookingStatus    @default(PENDING)
   payment         Payment?
   review          Review?
-  checkInToken    String?          @unique
-  serviceRequests ServiceRequest[]
+  checkInToken        String?          @unique
+  bookingAccessToken  String?          @unique
+  serviceRequests     ServiceRequest[]
 }
 
 enum BookingStatus {

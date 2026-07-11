@@ -130,6 +130,12 @@ export async function createBooking(input: z.infer<typeof bookingSchema>) {
 
   await generateCheckInToken(result.id);
 
+  const accessToken = randomBytes(32).toString("hex");
+  await prisma.booking.update({
+    where: { id: result.id },
+    data: { bookingAccessToken: accessToken },
+  });
+
   const guestId = result.guestId;
   const bookingWithRoom = await prisma.booking.findUnique({
     where: { id: result.id },
