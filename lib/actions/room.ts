@@ -28,8 +28,13 @@ export async function createRoom(data: z.infer<typeof roomCreateSchema>) {
   return prisma.room.create({ data: parsed });
 }
 
-export async function listRooms() {
-  return prisma.room.findMany({ include: { roomType: true } });
+export async function listRooms(propertyId?: string) {
+  return prisma.room.findMany({
+    where: propertyId
+      ? { roomType: { propertyId } }
+      : undefined,
+    include: { roomType: true },
+  });
 }
 
 export async function updateRoomStatus(

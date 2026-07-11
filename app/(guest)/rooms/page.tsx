@@ -16,6 +16,7 @@ export const metadata: Metadata = {
 };
 
 type SearchParams = {
+  propertyId?: string;
   checkIn?: string;
   checkOut?: string;
   capacity?: string;
@@ -24,9 +25,13 @@ type SearchParams = {
 };
 
 async function getAvailableRoomTypes(searchParams: SearchParams) {
-  const { checkIn, checkOut, capacity, minPrice, maxPrice } = searchParams;
+  const { propertyId, checkIn, checkOut, capacity, minPrice, maxPrice } = searchParams;
 
   const where: Record<string, unknown> = {};
+
+  if (propertyId) {
+    where.propertyId = propertyId;
+  }
 
   if (capacity) {
     where.capacity = { gte: parseInt(capacity, 10) };

@@ -9,9 +9,12 @@ export const metadata: Metadata = {
   title: "Housekeeping",
 };
 
-async function getDirtyRooms() {
+async function getDirtyRooms(propertyId?: string) {
   const rooms = await prisma.room.findMany({
-    where: { status: { in: ["DIRTY", "IN_PROGRESS"] } },
+    where: {
+      status: { in: ["DIRTY", "IN_PROGRESS"] },
+      ...(propertyId ? { roomType: { propertyId } } : {}),
+    },
     include: { roomType: { select: { title: true } } },
     orderBy: { roomNumber: "asc" },
   });
@@ -24,11 +27,14 @@ async function getDirtyRooms() {
   }));
 }
 
-async function getHousekeepingRequests() {
+async function getHousekeepingRequests(propertyId?: string) {
   const requests = await prisma.serviceRequest.findMany({
     where: {
       type: "HOUSEKEEPING",
       status: { not: "RESOLVED" },
+      ...(propertyId
+        ? { booking: { room: { roomType: { propertyId } } } }
+        : {}),
     },
     include: {
       booking: {
@@ -53,8 +59,20 @@ async function getHousekeepingRequests() {
   }));
 }
 
-export default async function HousekeepingPage() {
-  const [rooms, serviceRequests] = await Promise.all([getDirtyRooms(), getHousekeepingRequests()]);
+type HousekeepingSearchParams = {
+  propertyId?: string;
+};
+
+export default async function HousekeepingPage({
+  searchParams,
+}: {
+  searchParams: Promise<HousekeepingSearchParams>;
+}) {
+  const params = await searchParams;
+  const [rooms, serviceRequests] = await Promise.all([
+    getDirtyRooms(params.propertyId),
+    getHousekeepingRequests(params.propertyId),
+  ]);
 
   return (
     <div className="space-y-6">

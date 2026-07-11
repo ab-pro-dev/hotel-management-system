@@ -10,6 +10,7 @@ const roomTypeSchema = z.object({
   description: z.string().min(1, "Description is required"),
   basePrice: z.number().positive("Base price must be positive"),
   capacity: z.number().int().min(1, "Capacity must be at least 1"),
+  propertyId: z.string().min(1, "Property is required"),
 });
 
 const roomTypeUpdateSchema = roomTypeSchema.partial();
@@ -28,8 +29,11 @@ export async function createRoomType(data: z.infer<typeof roomTypeSchema>) {
   return prisma.roomType.create({ data: parsed });
 }
 
-export async function listRoomTypes() {
-  return prisma.roomType.findMany({ include: { rooms: true } });
+export async function listRoomTypes(propertyId?: string) {
+  return prisma.roomType.findMany({
+    where: propertyId ? { propertyId } : undefined,
+    include: { rooms: true },
+  });
 }
 
 export async function updateRoomType(

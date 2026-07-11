@@ -158,7 +158,7 @@ export default async function GuestDashboard() {
                   <div className="text-sm font-medium">
                     ${Number(booking.totalPrice).toFixed(2)}
                   </div>
-                  <Button variant="outline" size="sm" className="gap-2">
+                  <Button variant="outline" size="sm" className="gap-2" render={<a href={`/api/bills?bookingId=${booking.id}`} target="_blank" />}>
                     <Download className="h-4 w-4" />
                     Download Bill
                   </Button>

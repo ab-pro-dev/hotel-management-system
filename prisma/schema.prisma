@@ -28,12 +28,22 @@ enum Role {
   ADMIN
 }
 
+model Property {
+  id        String     @id @default(cuid())
+  name      String
+  address   String
+  roomTypes RoomType[]
+  createdAt DateTime   @default(now())
+}
+
 model RoomType {
-  id          String  @id @default(cuid())
+  id          String   @id @default(cuid())
   title       String
   description String
   basePrice   Decimal
   capacity    Int
+  property    Property @relation(fields: [propertyId], references: [id])
+  propertyId  String
   rooms       Room[]
 }
 

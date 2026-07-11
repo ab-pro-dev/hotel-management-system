@@ -9,8 +9,11 @@ export const metadata: Metadata = {
   title: "Reception — Room Overview",
 };
 
-async function getRooms() {
+async function getRooms(propertyId?: string) {
   const rooms = await prisma.room.findMany({
+    where: propertyId
+      ? { roomType: { propertyId } }
+      : undefined,
     include: {
       roomType: { select: { title: true, capacity: true } },
       bookings: {
@@ -44,9 +47,14 @@ async function getRooms() {
   }));
 }
 
-async function getServiceRequests() {
+async function getServiceRequests(propertyId?: string) {
   const requests = await prisma.serviceRequest.findMany({
-    where: { status: { not: "RESOLVED" } },
+    where: {
+      status: { not: "RESOLVED" },
+      ...(propertyId
+        ? { booking: { room: { roomType: { propertyId } } } }
+        : {}),
+    },
     include: {
       booking: {
         include: {
@@ -70,8 +78,20 @@ async function getServiceRequests() {
   }));
 }
 
-export default async function ReceptionPage() {
-  const [rooms, serviceRequests] = await Promise.all([getRooms(), getServiceRequests()]);
+type ReceptionSearchParams = {
+  propertyId?: string;
+};
+
+export default async function ReceptionPage({
+  searchParams,
+}: {
+  searchParams: Promise<ReceptionSearchParams>;
+}) {
+  const params = await searchParams;
+  const [rooms, serviceRequests] = await Promise.all([
+    getRooms(params.propertyId),
+    getServiceRequests(params.propertyId),
+  ]);
 
   return (
     <div className="space-y-6">

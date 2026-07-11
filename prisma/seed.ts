@@ -12,6 +12,17 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   console.log("Seeding database...");
 
+  const property = await prisma.property.upsert({
+    where: { id: "default-property" },
+    update: {},
+    create: {
+      id: "default-property",
+      name: "Grand Raya Hotel",
+      address: "123 Grand Avenue, City Center",
+    },
+  });
+  console.log(`Created property: ${property.name}`);
+
   const adminPasswordHash = await bcrypt.hash("admin123", 10);
 
   const admin = await prisma.user.upsert({
@@ -29,7 +40,7 @@ async function main() {
   const roomTypes = await Promise.all([
     prisma.roomType.upsert({
       where: { id: "standard-room" },
-      update: {},
+      update: { propertyId: property.id },
       create: {
         id: "standard-room",
         title: "Standard Room",
@@ -37,11 +48,12 @@ async function main() {
           "A comfortable room with modern amenities, featuring a queen-size bed, work desk, and en-suite bathroom. Perfect for solo travelers or couples.",
         basePrice: 129.0,
         capacity: 2,
+        propertyId: property.id,
       },
     }),
     prisma.roomType.upsert({
       where: { id: "deluxe-room" },
-      update: {},
+      update: { propertyId: property.id },
       create: {
         id: "deluxe-room",
         title: "Deluxe Room",
@@ -49,11 +61,12 @@ async function main() {
           "An elegantly appointed room with premium furnishings, king-size bed, sitting area, and panoramic views. Includes complimentary minibar and bathrobes.",
         basePrice: 219.0,
         capacity: 2,
+        propertyId: property.id,
       },
     }),
     prisma.roomType.upsert({
       where: { id: "suite" },
-      update: {},
+      update: { propertyId: property.id },
       create: {
         id: "suite",
         title: "Executive Suite",
@@ -61,6 +74,7 @@ async function main() {
           "A spacious suite with separate living area, king-size bed, luxury bathroom with soaking tub, and stunning city views. Ideal for extended stays or special occasions.",
         basePrice: 389.0,
         capacity: 4,
+        propertyId: property.id,
       },
     }),
   ]);
