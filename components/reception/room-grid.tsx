@@ -36,6 +36,11 @@ const STATUS_STYLES: Record<string, { bg: string; border: string; badge: string 
     border: "border-amber-300",
     badge: "bg-amber-100 text-amber-800",
   },
+  IN_PROGRESS: {
+    bg: "bg-sky-50",
+    border: "border-sky-300",
+    badge: "bg-sky-100 text-sky-800",
+  },
   MAINTENANCE: {
     bg: "bg-gray-100",
     border: "border-gray-300",

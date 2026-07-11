@@ -50,6 +50,7 @@ enum RoomStatus {
   AVAILABLE
   OCCUPIED
   DIRTY
+  IN_PROGRESS
   MAINTENANCE
 }
 
