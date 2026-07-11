@@ -1,29 +1,43 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
+import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 
-/**
- * Test-only endpoint to transition a booking to CHECKED_OUT so we can
- * verify the "Download Bill" button in e2e tests.
- *
- * POST /api/test/checkout-booking  { bookingId: string }
- *
- * This endpoint should be removed or gated behind NODE_ENV === "development"
- * before deploying to production.
- */
+const checkoutSchema = z.object({
+  bookingId: z.string().min(1, "bookingId is required"),
+});
+
 export async function POST(req: Request) {
   if (process.env.NODE_ENV === "production") {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const { bookingId } = await req.json();
-  if (!bookingId) {
-    return NextResponse.json({ error: "bookingId required" }, { status: 400 });
+  const session = await auth();
+  if (!session?.user || session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const booking = await prisma.booking.update({
-    where: { id: bookingId },
-    data: { status: "CHECKED_OUT" },
-  });
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
 
-  return NextResponse.json({ ok: true, id: booking.id, status: booking.status });
+  const parsed = checkoutSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
+  }
+
+  try {
+    const booking = await prisma.booking.update({
+      where: { id: parsed.data.bookingId },
+      data: { status: "CHECKED_OUT" },
+    });
+
+    return NextResponse.json({ ok: true, id: booking.id, status: booking.status });
+  } catch (error) {
+    console.error(`[test/checkout-booking] Failed to checkout booking ${parsed.data.bookingId}:`, error);
+    return NextResponse.json({ error: "Booking not found" }, { status: 404 });
+  }
 }
