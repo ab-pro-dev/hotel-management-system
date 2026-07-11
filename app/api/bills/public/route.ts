@@ -5,7 +5,7 @@ import { jsPDF } from "jspdf";
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get("token");
   if (!token) {
-    return Response.json({ error: "token is required" }, { status: 400 });
+    return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const booking = await prisma.booking.findUnique({
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   });
 
   if (!booking) {
-    return Response.json({ error: "Booking not found" }, { status: 404 });
+    return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const doc = new jsPDF();
