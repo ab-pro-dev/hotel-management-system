@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { getTranslations } from "next-intl/server";
 import { verifyAndCheckIn } from "@/lib/actions/qr-checkin";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";

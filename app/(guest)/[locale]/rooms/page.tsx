@@ -6,7 +6,7 @@ import { calculateRoomPrice } from "@/lib/pricing";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import FilterForm from "@/components/filter-form";
 
 export const metadata: Metadata = {

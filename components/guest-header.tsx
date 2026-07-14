@@ -2,7 +2,7 @@
 
 import { useTranslations, useLocale } from "next-intl";
 import { usePathname, useRouter } from "@/i18n/navigation";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import NotificationBell from "@/components/notification-bell";
 import { Button } from "@/components/ui/button";
 import { Globe } from "lucide-react";
