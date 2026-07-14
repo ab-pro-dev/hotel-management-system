@@ -22,15 +22,17 @@ function hasLocalePrefix(pathname: string): boolean {
   return locales.some((l) => pathname === `/${l}` || pathname.startsWith(`/${l}/`));
 }
 
-const ratelimit = new Ratelimit({
-  redis: Redis.fromEnv(),
-  limiter: Ratelimit.slidingWindow(10, "60 s"),
-  analytics: true,
-});
+const ratelimit = process.env.UPSTASH_REDIS_REST_URL
+  ? new Ratelimit({
+      redis: Redis.fromEnv(),
+      limiter: Ratelimit.slidingWindow(10, "60 s"),
+      analytics: true,
+    })
+  : null;
 
 async function rateLimit(ip: string) {
-  const { success, limit, remaining, reset } = await ratelimit.limit(ip);
-  return { success, limit, remaining, reset };
+  if (!ratelimit) return { success: true, limit: 10, remaining: 10, reset: Date.now() + 60000 };
+  return ratelimit.limit(ip);
 }
 
 const i18nMiddleware = async (req: Request, locale: string) => {
