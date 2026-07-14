@@ -3,6 +3,7 @@
 import { useTranslations, useLocale } from "next-intl";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
+import { useSession } from "next-auth/react";
 import NotificationBell from "@/components/notification-bell";
 import { Button } from "@/components/ui/button";
 import { Globe } from "lucide-react";
@@ -18,6 +19,8 @@ export default function GuestHeader() {
   const locale = useLocale();
   const pathname = usePathname();
   const router = useRouter();
+  const { data: session } = useSession();
+  const role = session?.user?.role;
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -41,12 +44,38 @@ export default function GuestHeader() {
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
         <span className="text-lg font-semibold">{t("common.hotelName")}</span>
         <nav className="flex items-center gap-4 text-sm">
-          <Link
-            href="/rooms"
-            className="text-muted-foreground hover:text-foreground"
-          >
-            {t("nav.rooms")}
-          </Link>
+          {(!role || role === "GUEST") && (
+            <Link
+              href="/rooms"
+              className="text-muted-foreground hover:text-foreground"
+            >
+              {t("nav.rooms")}
+            </Link>
+          )}
+
+          {role === "ADMIN" && (
+            <>
+              <Link href="/admin/manage" className="text-muted-foreground hover:text-foreground">
+                {t("nav.manage")}
+              </Link>
+              <Link href="/admin/analytics" className="text-muted-foreground hover:text-foreground">
+                {t("nav.analytics")}
+              </Link>
+            </>
+          )}
+
+          {role === "RECEPTIONIST" && (
+            <Link href="/reception" className="text-muted-foreground hover:text-foreground">
+              {t("nav.reception")}
+            </Link>
+          )}
+
+          {role === "HOUSEKEEPER" && (
+            <Link href="/housekeeping" className="text-muted-foreground hover:text-foreground">
+              {t("nav.housekeeping")}
+            </Link>
+          )}
+
           <NotificationBell />
           <div className="relative" ref={ref}>
             <Button

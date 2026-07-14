@@ -12,7 +12,11 @@
   "nav": {
     "rooms": "Rooms",
     "dashboard": "Dashboard",
-    "login": "Login"
+    "login": "Login",
+    "manage": "Manage",
+    "analytics": "Analytics",
+    "reception": "Reception",
+    "housekeeping": "Housekeeping"
   },
   "home": {
     "hero": "Find the perfect room for your stay",

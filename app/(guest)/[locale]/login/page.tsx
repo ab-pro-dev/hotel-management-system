@@ -11,11 +11,17 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LogIn } from "lucide-react";
 
+const ROLE_REDIRECTS: Record<string, string> = {
+  ADMIN: "/admin/analytics",
+  RECEPTIONIST: "/reception",
+  HOUSEKEEPER: "/housekeeping",
+};
+
 function LoginForm() {
   const t = useTranslations("login");
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const callbackUrl = searchParams.get("callbackUrl");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -37,7 +43,15 @@ function LoginForm() {
       if (result?.error) {
         setError(t("invalidCredentials"));
       } else {
-        router.push(callbackUrl);
+        if (callbackUrl) {
+          router.push(callbackUrl);
+        } else {
+          const sessionRes = await fetch("/api/auth/session");
+          const session = await sessionRes.json();
+          const role = session?.user?.role;
+          const redirectPath = ROLE_REDIRECTS[role] || "/dashboard";
+          router.push(redirectPath);
+        }
         router.refresh();
       }
     } catch {

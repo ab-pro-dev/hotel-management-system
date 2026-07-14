@@ -12,7 +12,11 @@
   "nav": {
     "rooms": "ክፍሎች",
     "dashboard": "ዳሽቦርድ",
-    "login": "ግባ"
+    "login": "ግባ",
+    "manage": "አስተዳደር",
+    "analytics": "ትንታኔ",
+    "reception": "መቀበያ",
+    "housekeeping": "ንጽህ"
   },
   "home": {
     "hero": "ለማረፊያዎ ተስማሚውን ክፍል ያግኙ",
