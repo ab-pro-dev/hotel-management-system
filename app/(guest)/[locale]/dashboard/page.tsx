@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import QRCode from "qrcode";
+import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,10 +16,11 @@ export const metadata = {
   title: "My Dashboard",
 };
 
-export default async function GuestDashboard() {
+export default async function GuestDashboard({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
   const t = await getTranslations("dashboard");
   const session = await auth();
-  if (!session?.user?.id) redirect("/login");
+  if (!session?.user?.id) redirect(`/${locale}/login`);
 
   const [guest, upcomingBookings, pastBookings] = await Promise.all([
     prisma.user.findUnique({
@@ -138,11 +140,12 @@ export default async function GuestDashboard() {
                   {qrCodes[booking.id] && (
                     <div className="pt-2">
                       <p className="text-xs text-muted-foreground mb-2">{t("scanToCheckIn")}</p>
-                      <img
+                      <Image
                         src={qrCodes[booking.id]}
                         alt="Check-in QR code"
                         width={160}
                         height={160}
+                        unoptimized
                         className="rounded-lg border"
                       />
                     </div>

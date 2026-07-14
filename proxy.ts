@@ -62,7 +62,7 @@ export default auth(async (req) => {
       ?? req.headers.get("x-real-ip")
       ?? "127.0.0.1";
 
-    const { success, remaining, reset } = await rateLimit(ip);
+    const { success, reset } = await rateLimit(ip);
 
     if (!success) {
       const retryAfter = Math.ceil((reset - Date.now()) / 1000);

@@ -6,7 +6,7 @@ import prisma from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Wifi, Tv, Wind, Coffee, Bath, Waves, PawPrint, Eye, Shirt } from "lucide-react";
+import { ArrowLeft, Wifi, Tv, Wind, Coffee, Bath, PawPrint, Eye, Shirt } from "lucide-react";
 import PhotoGallery from "@/components/photo-gallery";
 
 const AMENITY_LABELS: Record<string, { labelKey: string; icon: React.ElementType }> = {

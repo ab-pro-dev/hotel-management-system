@@ -1,7 +1,7 @@
 "use client";
 
 import { useReducer, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter as useI18nRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -288,7 +288,7 @@ type BookingWizardProps = {
 
 export default function BookingWizard({ roomType, initialCheckIn, initialCheckOut }: BookingWizardProps) {
   const t = useTranslations();
-  const router = useRouter();
+  const i18nRouter = useI18nRouter();
   const [state, dispatch] = useReducer(reducer, {
     step: 0,
     checkIn: initialCheckIn ?? "",
@@ -471,7 +471,7 @@ export default function BookingWizard({ roomType, initialCheckIn, initialCheckOu
               )}
             </>
           ) : (
-            <Button className="w-full" onClick={() => router.push("/rooms")}>
+            <Button className="w-full" onClick={() => i18nRouter.push("/rooms")}>
               {t("booking.browseMoreRooms")}
             </Button>
           )}

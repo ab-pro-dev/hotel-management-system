@@ -22,9 +22,10 @@ const ACTION_COLORS: Record<string, string> = {
   CANCEL: "bg-red-100 text-red-800",
 };
 
-export default async function AuditLogPage() {
+export default async function AuditLogPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
   const session = await auth();
-  if (!session?.user || session.user.role !== "ADMIN") redirect("/login");
+  if (!session?.user || session.user.role !== "ADMIN") redirect(`/${locale}/login`);
 
   const logs = await prisma.auditLog.findMany({
     take: 100,

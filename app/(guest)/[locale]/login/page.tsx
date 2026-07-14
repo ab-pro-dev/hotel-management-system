@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter as useI18nRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,6 +21,7 @@ const ROLE_REDIRECTS: Record<string, string> = {
 function LoginForm() {
   const t = useTranslations("login");
   const router = useRouter();
+  const i18nRouter = useI18nRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl");
 
@@ -50,7 +52,7 @@ function LoginForm() {
           const session = await sessionRes.json();
           const role = session?.user?.role;
           const redirectPath = ROLE_REDIRECTS[role] || "/dashboard";
-          router.push(redirectPath);
+          i18nRouter.push(redirectPath as "/dashboard" | "/admin/analytics" | "/reception" | "/housekeeping");
         }
         router.refresh();
       }

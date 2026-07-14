@@ -1,5 +1,5 @@
-import { notFound } from "next/navigation";
 import { Metadata } from "next";
+import Image from "next/image";
 import QRCode from "qrcode";
 import prisma from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -132,11 +132,12 @@ export default async function BookingPage({ params }: Props) {
             <div className="rounded-lg border p-4 text-center space-y-2">
               <p className="text-sm font-medium">Check-in QR Code</p>
               <p className="text-xs text-muted-foreground">Show this at the front desk on arrival</p>
-              <img
+              <Image
                 src={qrDataUrl}
                 alt="Check-in QR code"
                 width={200}
                 height={200}
+                unoptimized
                 className="mx-auto rounded-lg"
               />
             </div>

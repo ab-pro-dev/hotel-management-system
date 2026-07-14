@@ -10,9 +10,10 @@ export const metadata: Metadata = {
   title: "Admin — Manage",
 };
 
-export default async function ManagePage() {
+export default async function ManagePage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
   const session = await auth();
-  if (!session?.user || session.user.role !== "ADMIN") redirect("/login");
+  if (!session?.user || session.user.role !== "ADMIN") redirect(`/${locale}/login`);
 
   const [roomTypes, rooms] = await Promise.all([
     prisma.roomType.findMany({

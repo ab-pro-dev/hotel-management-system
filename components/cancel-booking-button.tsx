@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -12,15 +12,23 @@ type Props = {
   checkInDate: string;
 };
 
+function useTimeUntilCheckIn(checkInDate: string): boolean {
+  return useSyncExternalStore(
+    () => () => {},
+    () => {
+      const hours = (new Date(checkInDate).getTime() - Date.now()) / (1000 * 60 * 60);
+      return hours <= 48;
+    },
+    () => false
+  );
+}
+
 export default function CancelBookingButton({ bookingId, checkInDate }: Props) {
   const t = useTranslations("cancel");
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const hoursUntilCheckIn =
-    (new Date(checkInDate).getTime() - Date.now()) / (1000 * 60 * 60);
-  const within48h = hoursUntilCheckIn <= 48;
+  const within48h = useTimeUntilCheckIn(checkInDate);
 
   async function handleCancel() {
     const message = within48h

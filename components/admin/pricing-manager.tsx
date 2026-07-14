@@ -43,24 +43,33 @@ export default function PricingManager({ roomTypes }: Props) {
 
   useEffect(() => {
     if (!selectedRoomType) return;
-    setLoading(true);
-    setError(null);
+
+    let cancelled = false;
+
     listPriceOverrides(selectedRoomType)
-      .then((data) =>
-        setOverrides(
-          data.map((o) => ({
-            id: o.id,
-            date: o.date.toISOString().split("T")[0],
-            overridePrice: Number(o.overridePrice),
-          }))
-        )
-      )
-      .catch((e) => {
-        console.error(e);
-        setOverrides([]);
-        setError("Failed to load price overrides.");
+      .then((data) => {
+        if (!cancelled) {
+          setOverrides(
+            data.map((o) => ({
+              id: o.id,
+              date: o.date.toISOString().split("T")[0],
+              overridePrice: Number(o.overridePrice),
+            }))
+          );
+        }
       })
-      .finally(() => setLoading(false));
+      .catch((e) => {
+        if (!cancelled) {
+          console.error(e);
+          setOverrides([]);
+          setError("Failed to load price overrides.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => { cancelled = true; };
   }, [selectedRoomType]);
 
   async function handleAdd() {
@@ -122,7 +131,13 @@ export default function PricingManager({ roomTypes }: Props) {
       )}
       <div className="space-y-2">
         <Label>Room Type</Label>
-        <Select value={selectedRoomType} onValueChange={(v: string | null) => v && setSelectedRoomType(v)}>
+        <Select value={selectedRoomType} onValueChange={(v: string | null) => {
+          if (v) {
+            setLoading(true);
+            setError(null);
+            setSelectedRoomType(v);
+          }
+        }}>
           <SelectTrigger className="w-full max-w-sm">
             <SelectValue placeholder="Select room type" />
           </SelectTrigger>

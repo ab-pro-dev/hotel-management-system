@@ -2,7 +2,6 @@
 
 import { z } from "zod";
 import { randomBytes } from "crypto";
-import { Role } from "@prisma/client";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import { pusherServer } from "@/lib/pusher-server";

@@ -8,9 +8,10 @@ export const metadata: Metadata = {
   title: "Admin — Pricing Overrides",
 };
 
-export default async function PricingPage() {
+export default async function PricingPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
   const session = await auth();
-  if (!session?.user || session.user.role !== "ADMIN") redirect("/login");
+  if (!session?.user || session.user.role !== "ADMIN") redirect(`/${locale}/login`);
 
   const roomTypes = await prisma.roomType.findMany({
     select: { id: true, title: true, basePrice: true },

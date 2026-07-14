@@ -7,8 +7,6 @@ import prisma from "@/lib/prisma";
 import { pusherServer } from "@/lib/pusher-server";
 import { createNotification } from "@/lib/notifications";
 
-const idSchema = z.string().min(1, "ID is required");
-
 const createServiceRequestSchema = z.object({
   bookingId: z.string().min(1, "Booking ID is required"),
   type: z.nativeEnum(ServiceRequestType, { error: "Invalid request type" }),

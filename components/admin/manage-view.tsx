@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { RoomStatus } from "@prisma/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -200,7 +201,7 @@ export default function ManageView({
     setError(null);
     setSaving(true);
     try {
-      await updateRoomStatus(roomId, { status: newStatus as any });
+      await updateRoomStatus(roomId, { status: newStatus as RoomStatus });
       setRooms((prev) =>
         prev.map((r) => (r.id === roomId ? { ...r, status: newStatus } : r))
       );
