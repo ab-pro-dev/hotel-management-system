@@ -28,7 +28,7 @@ type YieldMetrics = {
 };
 type PopularityPoint = { roomType: string; bookings: number };
 
-const PIE_COLORS = ["oklch(0.58 0.08 65)", "oklch(0.52 0.01 55)"];
+const PIE_COLORS = ["oklch(0.32 0.06 155)", "oklch(0.56 0.01 75)"];
 
 function OccupancyChart({ data }: { data: OccupancyPoint[] }) {
   return (
@@ -54,7 +54,7 @@ function OccupancyChart({ data }: { data: OccupancyPoint[] }) {
             <Line
               type="monotone"
               dataKey="occupancy"
-              stroke="oklch(0.58 0.08 65)"
+              stroke="oklch(0.32 0.06 155)"
               strokeWidth={2}
               dot={false}
             />
@@ -123,7 +123,7 @@ function PopularityChart({ data }: { data: PopularityPoint[] }) {
             <XAxis dataKey="roomType" tick={{ fontSize: 12 }} />
             <YAxis tick={{ fontSize: 12 }} />
             <Tooltip />
-            <Bar dataKey="bookings" fill="oklch(0.58 0.08 65)" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="bookings" fill="oklch(0.32 0.06 155)" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>

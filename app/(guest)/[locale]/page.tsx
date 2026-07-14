@@ -96,11 +96,7 @@ export default function HomePage() {
           {/* CTA */}
           <Link
             href="/rooms"
-            className="group mt-10 inline-flex items-center gap-3 border px-8 py-3.5 text-xs tracking-[0.25em] uppercase transition-all duration-500"
-            style={{
-              borderColor: "rgba(235,225,210,0.3)",
-              color: "rgba(235,225,210,0.9)",
-            }}
+            className="group mt-10 inline-flex items-center gap-3 bg-primary px-8 py-3.5 text-xs tracking-[0.25em] uppercase text-primary-foreground transition-all duration-500 hover:bg-primary/90"
             id="browse-rooms-cta"
           >
             Browse Rooms
@@ -159,7 +155,7 @@ export default function HomePage() {
           {/* Secondary CTA */}
           <Link
             href="/rooms"
-            className="mt-12 inline-flex items-center gap-3 border border-border px-8 py-3.5 text-xs tracking-[0.25em] uppercase text-foreground transition-all duration-500 hover:border-foreground hover:bg-foreground hover:text-background"
+            className="mt-12 inline-flex items-center gap-3 border border-primary px-8 py-3.5 text-xs tracking-[0.25em] uppercase text-primary transition-all duration-500 hover:bg-primary hover:text-primary-foreground"
             id="explore-rooms-cta"
           >
             Explore Our Rooms
