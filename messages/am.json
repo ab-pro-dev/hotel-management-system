@@ -44,7 +44,8 @@
     "filterMax": "ከፍተኛ",
     "filterAmenities": "አገልግሎቶች",
     "loadingFilters": "ማጣሪያዎች በመጫን ላይ...",
-    "loadingRooms": "ክፍሎች በመጫን ላይ..."
+    "loadingRooms": "ክፍሎች በመጫን ላይ...",
+    "search": "ፈልግ"
   },
   "login": {
     "title": "እንኳን ተመለሱ",
