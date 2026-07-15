@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { LogIn } from "lucide-react";
 
 const ROLE_REDIRECTS: Record<string, string> = {
-  ADMIN: "/admin/analytics",
+  ADMIN: "/admin",
   RECEPTIONIST: "/reception",
   HOUSEKEEPER: "/housekeeping",
 };
