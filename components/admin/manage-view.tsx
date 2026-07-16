@@ -47,13 +47,15 @@ import {
   Building2,
   Tag,
   Clock,
+  Wrench,
 } from "lucide-react";
 import { createRoomType, updateRoomType, deleteRoomType } from "@/lib/actions/room-type";
-import { createRoom, updateRoomStatus, deleteRoom } from "@/lib/actions/room";
+import { createRoom, updateRoomStatus, updateRoom, deleteRoom } from "@/lib/actions/room";
 import { createStaffUser, updateUserRole, deactivateUser, reactivateUser } from "@/lib/actions/user";
 import { createProperty, updateProperty, deleteProperty } from "@/lib/actions/property";
 import { createCoupon, updateCoupon, deleteCoupon } from "@/lib/actions/coupon";
 import { createWaitlistEntry, updateWaitlistEntry, deleteWaitlistEntry } from "@/lib/actions/waitlist";
+import { deleteServiceRequest } from "@/lib/actions/service-request";
 
 type RoomType = {
   id: string;
@@ -108,6 +110,20 @@ type WaitlistEntry = {
   notified: boolean;
 };
 
+type ServiceRequestItem = {
+  id: string;
+  type: string;
+  message: string;
+  status: string;
+  priority: string;
+  createdAt: string;
+  guestName: string;
+  guestEmail: string;
+  roomNumber: string;
+  bookingId: string;
+  assignedToName: string | null;
+};
+
 const ROOM_STATUSES = ["AVAILABLE", "OCCUPIED", "DIRTY", "IN_PROGRESS", "MAINTENANCE"] as const;
 
 const STATUS_COLORS: Record<string, string> = {
@@ -126,7 +142,20 @@ const ROLE_COLORS: Record<string, string> = {
   HOUSEKEEPER: "bg-muted text-muted-foreground",
 };
 
-type Tab = "room-types" | "rooms" | "staff" | "properties" | "coupons" | "waitlist";
+const REQUEST_STATUS_COLORS: Record<string, string> = {
+  OPEN: "bg-primary/10 text-primary",
+  IN_PROGRESS: "bg-secondary text-secondary-foreground",
+  RESOLVED: "bg-muted text-muted-foreground",
+  CLOSED: "bg-muted text-muted-foreground",
+};
+
+const REQUEST_TYPE_LABELS: Record<string, string> = {
+  HOUSEKEEPING: "Housekeeping",
+  FRONT_DESK: "Front Desk",
+  MAINTENANCE: "Maintenance",
+};
+
+type Tab = "room-types" | "rooms" | "staff" | "properties" | "coupons" | "waitlist" | "service-requests";
 
 export default function ManageView({
   roomTypes: initialRoomTypes,
@@ -135,6 +164,7 @@ export default function ManageView({
   properties: initialProperties,
   coupons: initialCoupons,
   waitlistEntries: initialWaitlist,
+  serviceRequests: initialServiceRequests,
 }: {
   roomTypes: RoomType[];
   rooms: Room[];
@@ -142,6 +172,7 @@ export default function ManageView({
   properties: Property[];
   coupons: Coupon[];
   waitlistEntries: WaitlistEntry[];
+  serviceRequests: ServiceRequestItem[];
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("room-types");
@@ -185,6 +216,13 @@ export default function ManageView({
   const [editingWaitlist, setEditingWaitlist] = useState<WaitlistEntry | null>(null);
   const [waitlistForm, setWaitlistForm] = useState({ guestEmail: "", roomTypeId: "", requestedCheckIn: "", requestedCheckOut: "" });
   const [waitlistDeleteDialog, setWaitlistDeleteDialog] = useState<{ id: string; label: string } | null>(null);
+
+  const [serviceRequests, setServiceRequests] = useState(initialServiceRequests);
+  const [serviceRequestDeleteDialog, setServiceRequestDeleteDialog] = useState<{ id: string; label: string } | null>(null);
+  const [srFilter, setSrFilter] = useState<"all" | "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED">("all");
+
+  const [roomEditDialog, setRoomEditDialog] = useState<Room | null>(null);
+  const [roomEditForm, setRoomEditForm] = useState({ roomNumber: "", roomTypeId: "" });
 
   function openRtCreate() {
     setEditingRt(null);
@@ -316,6 +354,54 @@ export default function ManageView({
     } catch (e) {
       console.error(e);
       setError(e instanceof Error ? e.message : "Failed to update room status.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function openRoomEdit(room: Room) {
+    setRoomEditDialog(room);
+    setRoomEditForm({ roomNumber: room.roomNumber, roomTypeId: room.roomType.id });
+  }
+
+  async function handleRoomEdit() {
+    if (!roomEditDialog) return;
+    setError(null);
+    setSaving(true);
+    try {
+      await updateRoom(roomEditDialog.id, {
+        roomNumber: roomEditForm.roomNumber,
+        roomTypeId: roomEditForm.roomTypeId,
+      });
+      const rt = roomTypes.find((rt) => rt.id === roomEditForm.roomTypeId);
+      setRooms((prev) =>
+        prev.map((r) =>
+          r.id === roomEditDialog.id
+            ? { ...r, roomNumber: roomEditForm.roomNumber, roomType: { id: rt!.id, title: rt!.title } }
+            : r
+        )
+      );
+      setRoomEditDialog(null);
+      router.refresh();
+    } catch (e) {
+      console.error(e);
+      setError(e instanceof Error ? e.message : "Failed to update room.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleServiceRequestDelete(id: string) {
+    setError(null);
+    setSaving(true);
+    try {
+      await deleteServiceRequest(id);
+      setServiceRequests((prev) => prev.filter((sr) => sr.id !== id));
+      setServiceRequestDeleteDialog(null);
+      router.refresh();
+    } catch (e) {
+      console.error(e);
+      setError(e instanceof Error ? e.message : "Failed to delete service request.");
     } finally {
       setSaving(false);
     }
@@ -642,6 +728,18 @@ export default function ManageView({
           Waitlist
           <Badge variant="secondary" className="ml-1">{waitlistEntries.length}</Badge>
         </button>
+        <button
+          onClick={() => setTab("service-requests")}
+          className={`flex items-center gap-2 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+            tab === "service-requests"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Wrench className="h-4 w-4" />
+          Service Requests
+          <Badge variant="secondary" className="ml-1">{serviceRequests.length}</Badge>
+        </button>
       </div>
 
       {tab === "room-types" && (
@@ -765,14 +863,23 @@ export default function ManageView({
                           </Select>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => setRoomDeleteDialog({ id: room.id, label: room.roomNumber })}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openRoomEdit(room)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => setRoomDeleteDialog({ id: room.id, label: room.roomNumber })}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
@@ -1052,6 +1159,91 @@ export default function ManageView({
         </div>
       )}
 
+      {tab === "service-requests" && (
+        <div className="space-y-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex gap-2">
+              {(["all", "OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"] as const).map((f) => (
+                <Button
+                  key={f}
+                  variant={srFilter === f ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSrFilter(f)}
+                >
+                  {f === "all" ? "All" : f.replace("_", " ")} ({serviceRequests.filter((sr) => f === "all" || sr.status === f).length})
+                </Button>
+              ))}
+            </div>
+          </div>
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Guest</TableHead>
+                    <TableHead>Room</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Message</TableHead>
+                    <TableHead>Priority</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Assigned To</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {serviceRequests.filter((sr) => srFilter === "all" || sr.status === srFilter).length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+                        No service requests.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    serviceRequests
+                      .filter((sr) => srFilter === "all" || sr.status === srFilter)
+                      .map((sr) => (
+                        <TableRow key={sr.id}>
+                          <TableCell>
+                            <div className="font-medium">{sr.guestName}</div>
+                            <div className="text-xs text-muted-foreground">{sr.guestEmail}</div>
+                          </TableCell>
+                          <TableCell className="font-mono text-sm">{sr.roomNumber}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary" className="border-0">
+                              {REQUEST_TYPE_LABELS[sr.type] || sr.type}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="max-w-xs truncate text-sm text-muted-foreground">
+                            {sr.message}
+                          </TableCell>
+                          <TableCell className="text-sm">{sr.priority}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary" className={`${REQUEST_STATUS_COLORS[sr.status] || ""} border-0`}>
+                              {sr.status.replace("_", " ")}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {sr.assignedToName || "—"}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => setServiceRequestDeleteDialog({ id: sr.id, label: `${sr.type} request by ${sr.guestName}` })}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       <Dialog open={rtDialogOpen} onOpenChange={setRtDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -1311,6 +1503,71 @@ export default function ManageView({
             <Button
               variant="destructive"
               onClick={() => roomDeleteDialog && handleRoomDelete(roomDeleteDialog.id)}
+              disabled={saving}
+            >
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!roomEditDialog} onOpenChange={() => setRoomEditDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Room</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="edit-room-number">Room Number</Label>
+              <Input
+                id="edit-room-number"
+                value={roomEditForm.roomNumber}
+                onChange={(e) => setRoomEditForm((f) => ({ ...f, roomNumber: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-room-type">Room Type</Label>
+              <Select
+                value={roomEditForm.roomTypeId}
+                onValueChange={(v: string | null) => v && setRoomEditForm((f) => ({ ...f, roomTypeId: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {roomTypes.map((rt) => (
+                    <SelectItem key={rt.id} value={rt.id}>{rt.title}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRoomEditDialog(null)} disabled={saving}>
+              Cancel
+            </Button>
+            <Button onClick={handleRoomEdit} disabled={saving || !roomEditForm.roomNumber || !roomEditForm.roomTypeId}>
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!serviceRequestDeleteDialog} onOpenChange={() => setServiceRequestDeleteDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Service Request</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Are you sure you want to delete this <span className="font-medium text-foreground">{serviceRequestDeleteDialog?.label}</span>? This action cannot be undone.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setServiceRequestDeleteDialog(null)} disabled={saving}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => serviceRequestDeleteDialog && handleServiceRequestDelete(serviceRequestDeleteDialog.id)}
               disabled={saving}
             >
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Delete"}

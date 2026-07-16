@@ -1,4 +1,6 @@
 import { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
 import {
   getOccupancyTrend,
   getRevenueBreakdown,
@@ -13,7 +15,11 @@ export const metadata: Metadata = {
   title: "Analytics",
 };
 
-export default async function AnalyticsPage() {
+export default async function AnalyticsPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  const session = await auth();
+  if (!session?.user || session.user.role !== "ADMIN") redirect(`/${locale}/login`);
+
   const [occupancy, revenue, metrics, popularity] = await Promise.all([
     getOccupancyTrend(30),
     getRevenueBreakdown(),

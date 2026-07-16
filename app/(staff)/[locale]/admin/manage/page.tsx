@@ -15,7 +15,7 @@ export default async function ManagePage({ params }: { params: Promise<{ locale:
   const session = await auth();
   if (!session?.user || session.user.role !== "ADMIN") redirect(`/${locale}/login`);
 
-  const [roomTypes, rooms, staffUsers, properties, coupons, waitlistEntries] = await Promise.all([
+  const [roomTypes, rooms, staffUsers, properties, coupons, waitlistEntries, serviceRequests] = await Promise.all([
     prisma.roomType.findMany({
       include: { rooms: true },
       orderBy: { title: "asc" },
@@ -45,6 +45,18 @@ export default async function ManagePage({ params }: { params: Promise<{ locale:
     }),
     prisma.waitlist.findMany({
       include: { roomType: { select: { title: true } } },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.serviceRequest.findMany({
+      include: {
+        booking: {
+          include: {
+            guest: { select: { name: true, email: true } },
+            room: { select: { roomNumber: true } },
+          },
+        },
+        assignedTo: { select: { name: true } },
+      },
       orderBy: { createdAt: "desc" },
     }),
   ]);
@@ -102,12 +114,26 @@ export default async function ManagePage({ params }: { params: Promise<{ locale:
     notified: w.notified,
   }));
 
+  const serializedServiceRequests = serviceRequests.map((sr) => ({
+    id: sr.id,
+    type: sr.type,
+    message: sr.message,
+    status: sr.status,
+    priority: sr.priority,
+    createdAt: sr.createdAt.toISOString(),
+    guestName: sr.booking.guest.name,
+    guestEmail: sr.booking.guest.email,
+    roomNumber: sr.booking.room.roomNumber,
+    bookingId: sr.bookingId,
+    assignedToName: sr.assignedTo?.name ?? null,
+  }));
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="font-heading text-2xl">Manage</h1>
         <p className="text-muted-foreground">
-          Create, edit, and delete room types, rooms, staff, properties, coupons, and waitlist entries.
+          Create, edit, and delete room types, rooms, staff, properties, coupons, waitlist entries, and service requests.
         </p>
       </div>
       <ManageView
@@ -117,6 +143,7 @@ export default async function ManagePage({ params }: { params: Promise<{ locale:
         properties={serializedProperties}
         coupons={serializedCoupons}
         waitlistEntries={serializedWaitlist}
+        serviceRequests={serializedServiceRequests}
       />
     </div>
   );

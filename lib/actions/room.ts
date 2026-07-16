@@ -15,6 +15,11 @@ const roomStatusSchema = z.object({
   status: z.nativeEnum(RoomStatus),
 });
 
+const roomUpdateSchema = z.object({
+  roomNumber: z.string().min(1, "Room number is required"),
+  roomTypeId: z.string().min(1, "Room type is required"),
+});
+
 async function requireAdmin() {
   const session = await auth();
   if (!session?.user || session.user.role !== Role.ADMIN) {
@@ -69,6 +74,37 @@ export async function updateRoomStatus(
 }
 
 const deleteRoomSchema = z.string().min(1, "Room ID is required");
+
+export async function updateRoom(
+  id: string,
+  data: z.infer<typeof roomUpdateSchema>
+) {
+  const user = await requireAdmin();
+  const parsed = roomUpdateSchema.parse(data);
+
+  const activeBookings = await prisma.booking.count({
+    where: {
+      roomId: id,
+      status: { in: ["PENDING", "CONFIRMED", "CHECKED_IN"] },
+    },
+  });
+
+  if (activeBookings > 0) {
+    throw new Error(`Cannot edit room with ${activeBookings} active booking(s). Check out or cancel them first.`);
+  }
+
+  try {
+    const room = await prisma.room.update({
+      where: { id },
+      data: { roomNumber: parsed.roomNumber, roomTypeId: parsed.roomTypeId },
+    });
+    await logAudit({ userId: user.id, action: "UPDATE", targetTable: "Room", targetId: room.id, metadata: { roomNumber: room.roomNumber, roomTypeId: room.roomTypeId } });
+    return room;
+  } catch (error) {
+    console.error(`[updateRoom] Failed to update room ${id}:`, error);
+    throw new Error("Failed to update room. Please try again.");
+  }
+}
 
 export async function deleteRoom(id: string) {
   const user = await requireAdmin();

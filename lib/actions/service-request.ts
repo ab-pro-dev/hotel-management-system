@@ -165,6 +165,31 @@ export async function listStaff() {
   }
 }
 
+export async function listServiceRequests() {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "ADMIN") {
+    throw new Error("Unauthorized: ADMIN role required");
+  }
+
+  try {
+    return await prisma.serviceRequest.findMany({
+      include: {
+        booking: {
+          include: {
+            guest: { select: { name: true, email: true } },
+            room: { select: { roomNumber: true } },
+          },
+        },
+        assignedTo: { select: { name: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+  } catch (error) {
+    console.error("[listServiceRequests] Failed to list service requests:", error);
+    throw new Error("Failed to load service requests.");
+  }
+}
+
 const deleteServiceRequestSchema = z.string().min(1, "Request ID is required");
 
 export async function deleteServiceRequest(id: string) {
