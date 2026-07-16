@@ -15,7 +15,7 @@ export default async function ManagePage({ params }: { params: Promise<{ locale:
   const session = await auth();
   if (!session?.user || session.user.role !== "ADMIN") redirect(`/${locale}/login`);
 
-  const [roomTypes, rooms, staffUsers] = await Promise.all([
+  const [roomTypes, rooms, staffUsers, properties, coupons, waitlistEntries] = await Promise.all([
     prisma.roomType.findMany({
       include: { rooms: true },
       orderBy: { title: "asc" },
@@ -34,6 +34,17 @@ export default async function ManagePage({ params }: { params: Promise<{ locale:
         isActive: true,
         createdAt: true,
       },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.property.findMany({
+      include: { _count: { select: { roomTypes: true } } },
+      orderBy: { name: "asc" },
+    }),
+    prisma.coupon.findMany({
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.waitlist.findMany({
+      include: { roomType: { select: { title: true } } },
       orderBy: { createdAt: "desc" },
     }),
   ]);
@@ -64,18 +75,48 @@ export default async function ManagePage({ params }: { params: Promise<{ locale:
     createdAt: u.createdAt.toISOString(),
   }));
 
+  const serializedProperties = properties.map((p) => ({
+    id: p.id,
+    name: p.name,
+    address: p.address,
+    roomTypeCount: p._count.roomTypes,
+  }));
+
+  const serializedCoupons = coupons.map((c) => ({
+    id: c.id,
+    code: c.code,
+    discountType: c.discountType,
+    discountValue: Number(c.discountValue),
+    expiresAt: c.expiresAt.toISOString(),
+    maxUses: c.maxUses,
+    usedCount: c.usedCount,
+  }));
+
+  const serializedWaitlist = waitlistEntries.map((w) => ({
+    id: w.id,
+    guestEmail: w.guestEmail,
+    roomTypeTitle: w.roomType.title,
+    roomTypeId: w.roomTypeId,
+    requestedCheckIn: w.requestedCheckIn.toISOString(),
+    requestedCheckOut: w.requestedCheckOut.toISOString(),
+    notified: w.notified,
+  }));
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="font-heading text-2xl">Manage</h1>
         <p className="text-muted-foreground">
-          Create, edit, and delete room types, rooms, and staff.
+          Create, edit, and delete room types, rooms, staff, properties, coupons, and waitlist entries.
         </p>
       </div>
       <ManageView
         roomTypes={serializedRoomTypes}
         rooms={serializedRooms}
         staffUsers={serializedStaff}
+        properties={serializedProperties}
+        coupons={serializedCoupons}
+        waitlistEntries={serializedWaitlist}
       />
     </div>
   );

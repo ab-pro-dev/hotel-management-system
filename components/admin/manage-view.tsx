@@ -44,10 +44,16 @@ import {
   Check,
   UserCheck,
   UserX,
+  Building2,
+  Tag,
+  Clock,
 } from "lucide-react";
 import { createRoomType, updateRoomType, deleteRoomType } from "@/lib/actions/room-type";
 import { createRoom, updateRoomStatus } from "@/lib/actions/room";
 import { createStaffUser, updateUserRole, deactivateUser, reactivateUser } from "@/lib/actions/user";
+import { createProperty, updateProperty, deleteProperty } from "@/lib/actions/property";
+import { createCoupon, updateCoupon, deleteCoupon } from "@/lib/actions/coupon";
+import { createWaitlistEntry, updateWaitlistEntry, deleteWaitlistEntry } from "@/lib/actions/waitlist";
 
 type RoomType = {
   id: string;
@@ -75,6 +81,33 @@ type StaffUser = {
   createdAt: string;
 };
 
+type Property = {
+  id: string;
+  name: string;
+  address: string;
+  roomTypeCount: number;
+};
+
+type Coupon = {
+  id: string;
+  code: string;
+  discountType: string;
+  discountValue: number;
+  expiresAt: string;
+  maxUses: number;
+  usedCount: number;
+};
+
+type WaitlistEntry = {
+  id: string;
+  guestEmail: string;
+  roomTypeTitle: string;
+  roomTypeId: string;
+  requestedCheckIn: string;
+  requestedCheckOut: string;
+  notified: boolean;
+};
+
 const ROOM_STATUSES = ["AVAILABLE", "OCCUPIED", "DIRTY", "IN_PROGRESS", "MAINTENANCE"] as const;
 
 const STATUS_COLORS: Record<string, string> = {
@@ -93,16 +126,22 @@ const ROLE_COLORS: Record<string, string> = {
   HOUSEKEEPER: "bg-muted text-muted-foreground",
 };
 
-type Tab = "room-types" | "rooms" | "staff";
+type Tab = "room-types" | "rooms" | "staff" | "properties" | "coupons" | "waitlist";
 
 export default function ManageView({
   roomTypes: initialRoomTypes,
   rooms: initialRooms,
   staffUsers: initialStaff,
+  properties: initialProperties,
+  coupons: initialCoupons,
+  waitlistEntries: initialWaitlist,
 }: {
   roomTypes: RoomType[];
   rooms: Room[];
   staffUsers: StaffUser[];
+  properties: Property[];
+  coupons: Coupon[];
+  waitlistEntries: WaitlistEntry[];
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("room-types");
@@ -127,6 +166,24 @@ export default function ManageView({
   const [copied, setCopied] = useState(false);
 
   const [roleDialog, setRoleDialog] = useState<{ user: StaffUser; newRole: string } | null>(null);
+
+  const [properties, setProperties] = useState(initialProperties);
+  const [propertyDialogOpen, setPropertyDialogOpen] = useState(false);
+  const [editingProperty, setEditingProperty] = useState<Property | null>(null);
+  const [propertyForm, setPropertyForm] = useState({ name: "", address: "" });
+  const [propertyDeleteDialog, setPropertyDeleteDialog] = useState<{ id: string; label: string } | null>(null);
+
+  const [coupons, setCoupons] = useState(initialCoupons);
+  const [couponDialogOpen, setCouponDialogOpen] = useState(false);
+  const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
+  const [couponForm, setCouponForm] = useState({ code: "", discountType: "PERCENT", discountValue: "", expiresAt: "", maxUses: "" });
+  const [couponDeleteDialog, setCouponDeleteDialog] = useState<{ id: string; label: string } | null>(null);
+
+  const [waitlistEntries, setWaitlistEntries] = useState(initialWaitlist);
+  const [waitlistDialogOpen, setWaitlistDialogOpen] = useState(false);
+  const [editingWaitlist, setEditingWaitlist] = useState<WaitlistEntry | null>(null);
+  const [waitlistForm, setWaitlistForm] = useState({ guestEmail: "", roomTypeId: "", requestedCheckIn: "", requestedCheckOut: "" });
+  const [waitlistDeleteDialog, setWaitlistDeleteDialog] = useState<{ id: string; label: string } | null>(null);
 
   function openRtCreate() {
     setEditingRt(null);
@@ -350,6 +407,140 @@ export default function ManageView({
     }
   }
 
+  async function handlePropertySubmit() {
+    setError(null);
+    setSaving(true);
+    try {
+      if (editingProperty) {
+        const updated = await updateProperty(editingProperty.id, propertyForm);
+        setProperties((prev) => prev.map((p) => (p.id === editingProperty.id ? { ...p, name: updated.name, address: updated.address } : p)));
+      } else {
+        const created = await createProperty(propertyForm);
+        setProperties((prev) => [...prev, { id: created.id, name: created.name, address: created.address, roomTypeCount: 0 }]);
+      }
+      setPropertyDialogOpen(false);
+      router.refresh();
+    } catch (e) {
+      console.error(e);
+      setError(e instanceof Error ? e.message : "Failed to save property.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handlePropertyDelete(id: string) {
+    setError(null);
+    setSaving(true);
+    try {
+      await deleteProperty(id);
+      setProperties((prev) => prev.filter((p) => p.id !== id));
+      setPropertyDeleteDialog(null);
+      router.refresh();
+    } catch (e) {
+      console.error(e);
+      setError(e instanceof Error ? e.message : "Failed to delete property.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleCouponSubmit() {
+    setError(null);
+    setSaving(true);
+    try {
+      if (editingCoupon) {
+        const updated = await updateCoupon(editingCoupon.id, {
+          code: couponForm.code,
+          discountType: couponForm.discountType as "PERCENT" | "FLAT",
+          discountValue: parseFloat(couponForm.discountValue),
+          expiresAt: couponForm.expiresAt,
+          maxUses: parseInt(couponForm.maxUses, 10),
+        });
+        setCoupons((prev) => prev.map((c) => (c.id === editingCoupon.id ? { ...c, code: updated.code, discountType: updated.discountType, discountValue: Number(updated.discountValue), expiresAt: updated.expiresAt.toISOString(), maxUses: updated.maxUses } : c)));
+      } else {
+        const created = await createCoupon({
+          code: couponForm.code,
+          discountType: couponForm.discountType as "PERCENT" | "FLAT",
+          discountValue: parseFloat(couponForm.discountValue),
+          expiresAt: couponForm.expiresAt,
+          maxUses: parseInt(couponForm.maxUses, 10),
+        });
+        setCoupons((prev) => [...prev, { id: created.id, code: created.code, discountType: created.discountType, discountValue: Number(created.discountValue), expiresAt: created.expiresAt.toISOString(), maxUses: created.maxUses, usedCount: created.usedCount }]);
+      }
+      setCouponDialogOpen(false);
+      router.refresh();
+    } catch (e) {
+      console.error(e);
+      setError(e instanceof Error ? e.message : "Failed to save coupon.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleCouponDelete(id: string) {
+    setError(null);
+    setSaving(true);
+    try {
+      await deleteCoupon(id);
+      setCoupons((prev) => prev.filter((c) => c.id !== id));
+      setCouponDeleteDialog(null);
+      router.refresh();
+    } catch (e) {
+      console.error(e);
+      setError(e instanceof Error ? e.message : "Failed to delete coupon.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleWaitlistSubmit() {
+    setError(null);
+    setSaving(true);
+    try {
+      if (editingWaitlist) {
+        await updateWaitlistEntry(editingWaitlist.id, {
+          guestEmail: waitlistForm.guestEmail,
+          roomTypeId: waitlistForm.roomTypeId,
+          requestedCheckIn: waitlistForm.requestedCheckIn,
+          requestedCheckOut: waitlistForm.requestedCheckOut,
+        });
+        setWaitlistEntries((prev) => prev.map((w) => (w.id === editingWaitlist.id ? { ...w, guestEmail: waitlistForm.guestEmail, requestedCheckIn: waitlistForm.requestedCheckIn, requestedCheckOut: waitlistForm.requestedCheckOut } : w)));
+      } else {
+        const created = await createWaitlistEntry({
+          guestEmail: waitlistForm.guestEmail,
+          roomTypeId: waitlistForm.roomTypeId,
+          requestedCheckIn: waitlistForm.requestedCheckIn,
+          requestedCheckOut: waitlistForm.requestedCheckOut,
+        });
+        const rt = roomTypes.find((rt) => rt.id === waitlistForm.roomTypeId);
+        setWaitlistEntries((prev) => [...prev, { id: created.id, guestEmail: created.guestEmail, roomTypeTitle: rt?.title ?? "", roomTypeId: created.roomTypeId, requestedCheckIn: created.requestedCheckIn.toISOString(), requestedCheckOut: created.requestedCheckOut.toISOString(), notified: created.notified }]);
+      }
+      setWaitlistDialogOpen(false);
+      router.refresh();
+    } catch (e) {
+      console.error(e);
+      setError(e instanceof Error ? e.message : "Failed to save waitlist entry.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleWaitlistDelete(id: string) {
+    setError(null);
+    setSaving(true);
+    try {
+      await deleteWaitlistEntry(id);
+      setWaitlistEntries((prev) => prev.filter((w) => w.id !== id));
+      setWaitlistDeleteDialog(null);
+      router.refresh();
+    } catch (e) {
+      console.error(e);
+      setError(e instanceof Error ? e.message : "Failed to delete waitlist entry.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       {error && (
@@ -397,6 +588,42 @@ export default function ManageView({
           <Users className="h-4 w-4" />
           Staff
           <Badge variant="secondary" className="ml-1">{staffUsers.length}</Badge>
+        </button>
+        <button
+          onClick={() => setTab("properties")}
+          className={`flex items-center gap-2 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+            tab === "properties"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Building2 className="h-4 w-4" />
+          Properties
+          <Badge variant="secondary" className="ml-1">{properties.length}</Badge>
+        </button>
+        <button
+          onClick={() => setTab("coupons")}
+          className={`flex items-center gap-2 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+            tab === "coupons"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Tag className="h-4 w-4" />
+          Coupons
+          <Badge variant="secondary" className="ml-1">{coupons.length}</Badge>
+        </button>
+        <button
+          onClick={() => setTab("waitlist")}
+          className={`flex items-center gap-2 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+            tab === "waitlist"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Clock className="h-4 w-4" />
+          Waitlist
+          <Badge variant="secondary" className="ml-1">{waitlistEntries.length}</Badge>
         </button>
       </div>
 
@@ -601,6 +828,190 @@ export default function ManageView({
                                 <UserCheck className="h-4 w-4" />
                               </Button>
                             )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {tab === "properties" && (
+        <div className="space-y-4">
+          <div className="flex justify-end">
+            <Button onClick={() => { setEditingProperty(null); setPropertyForm({ name: "", address: "" }); setPropertyDialogOpen(true); }} className="gap-1">
+              <Plus className="h-4 w-4" />
+              New Property
+            </Button>
+          </div>
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Address</TableHead>
+                    <TableHead className="text-right">Room Types</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {properties.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                        No properties yet.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    properties.map((p) => (
+                      <TableRow key={p.id}>
+                        <TableCell className="font-medium">{p.name}</TableCell>
+                        <TableCell className="text-muted-foreground">{p.address}</TableCell>
+                        <TableCell className="text-right">
+                          <Badge variant="outline">{p.roomTypeCount}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button variant="ghost" size="sm" onClick={() => { setEditingProperty(p); setPropertyForm({ name: p.name, address: p.address }); setPropertyDialogOpen(true); }}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setPropertyDeleteDialog({ id: p.id, label: p.name })}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {tab === "coupons" && (
+        <div className="space-y-4">
+          <div className="flex justify-end">
+            <Button onClick={() => { setEditingCoupon(null); setCouponForm({ code: "", discountType: "PERCENT", discountValue: "", expiresAt: "", maxUses: "" }); setCouponDialogOpen(true); }} className="gap-1">
+              <Plus className="h-4 w-4" />
+              New Coupon
+            </Button>
+          </div>
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Code</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead className="text-right">Value</TableHead>
+                    <TableHead>Expires</TableHead>
+                    <TableHead className="text-right">Uses</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {coupons.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                        No coupons yet.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    coupons.map((c) => (
+                      <TableRow key={c.id}>
+                        <TableCell className="font-mono font-medium">{c.code}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{c.discountType}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {c.discountType === "PERCENT" ? `${c.discountValue}%` : `$${c.discountValue.toFixed(2)}`}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {new Date(c.expiresAt).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="text-right text-sm">
+                          {c.usedCount}/{c.maxUses}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button variant="ghost" size="sm" onClick={() => { setEditingCoupon(c); setCouponForm({ code: c.code, discountType: c.discountType, discountValue: String(c.discountValue), expiresAt: c.expiresAt.split("T")[0], maxUses: String(c.maxUses) }); setCouponDialogOpen(true); }}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setCouponDeleteDialog({ id: c.id, label: c.code })}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {tab === "waitlist" && (
+        <div className="space-y-4">
+          <div className="flex justify-end">
+            <Button onClick={() => { setEditingWaitlist(null); setWaitlistForm({ guestEmail: "", roomTypeId: roomTypes[0]?.id ?? "", requestedCheckIn: "", requestedCheckOut: "" }); setWaitlistDialogOpen(true); }} className="gap-1">
+              <Plus className="h-4 w-4" />
+              Add to Waitlist
+            </Button>
+          </div>
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Guest Email</TableHead>
+                    <TableHead>Room Type</TableHead>
+                    <TableHead>Check-in</TableHead>
+                    <TableHead>Check-out</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {waitlistEntries.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                        No waitlist entries.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    waitlistEntries.map((w) => (
+                      <TableRow key={w.id}>
+                        <TableCell className="font-medium">{w.guestEmail}</TableCell>
+                        <TableCell className="text-muted-foreground">{w.roomTypeTitle}</TableCell>
+                        <TableCell className="text-sm">
+                          {new Date(w.requestedCheckIn).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {new Date(w.requestedCheckOut).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          {w.notified ? (
+                            <Badge className="bg-primary/10 text-primary">Notified</Badge>
+                          ) : (
+                            <Badge className="bg-secondary text-secondary-foreground">Pending</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button variant="ghost" size="sm" onClick={() => { setEditingWaitlist(w); setWaitlistForm({ guestEmail: w.guestEmail, roomTypeId: w.roomTypeId, requestedCheckIn: w.requestedCheckIn.split("T")[0], requestedCheckOut: w.requestedCheckOut.split("T")[0] }); setWaitlistDialogOpen(true); }}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setWaitlistDeleteDialog({ id: w.id, label: w.guestEmail })}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -851,6 +1262,168 @@ export default function ManageView({
               onClick={() => deleteDialog && handleRtDelete(deleteDialog.id)}
               disabled={saving}
             >
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={propertyDialogOpen} onOpenChange={setPropertyDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingProperty ? "Edit Property" : "New Property"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="prop-name">Name</Label>
+              <Input id="prop-name" value={propertyForm.name} onChange={(e) => setPropertyForm((f) => ({ ...f, name: e.target.value }))} placeholder="e.g. Grand Raya Resort" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="prop-address">Address</Label>
+              <Input id="prop-address" value={propertyForm.address} onChange={(e) => setPropertyForm((f) => ({ ...f, address: e.target.value }))} placeholder="Full address" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPropertyDialogOpen(false)} disabled={saving}>Cancel</Button>
+            <Button onClick={handlePropertySubmit} disabled={saving || !propertyForm.name || !propertyForm.address}>
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : editingProperty ? "Save Changes" : "Create"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!propertyDeleteDialog} onOpenChange={() => setPropertyDeleteDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Property</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Are you sure you want to delete <span className="font-medium text-foreground">{propertyDeleteDialog?.label}</span>? This action cannot be undone.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPropertyDeleteDialog(null)} disabled={saving}>Cancel</Button>
+            <Button variant="destructive" onClick={() => propertyDeleteDialog && handlePropertyDelete(propertyDeleteDialog.id)} disabled={saving}>
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={couponDialogOpen} onOpenChange={setCouponDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingCoupon ? "Edit Coupon" : "New Coupon"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="coupon-code">Code</Label>
+              <Input id="coupon-code" value={couponForm.code} onChange={(e) => setCouponForm((f) => ({ ...f, code: e.target.value }))} placeholder="e.g. SUMMER25" className="font-mono" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="coupon-type">Type</Label>
+                <Select value={couponForm.discountType} onValueChange={(v: string | null) => v && setCouponForm((f) => ({ ...f, discountType: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PERCENT">Percent (%)</SelectItem>
+                    <SelectItem value="FLAT">Flat ($)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="coupon-value">Value</Label>
+                <Input id="coupon-value" type="number" min="0" step="0.01" value={couponForm.discountValue} onChange={(e) => setCouponForm((f) => ({ ...f, discountValue: e.target.value }))} placeholder={couponForm.discountType === "PERCENT" ? "25" : "10.00"} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="coupon-expires">Expires</Label>
+                <Input id="coupon-expires" type="date" value={couponForm.expiresAt} onChange={(e) => setCouponForm((f) => ({ ...f, expiresAt: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="coupon-max">Max Uses</Label>
+                <Input id="coupon-max" type="number" min="1" value={couponForm.maxUses} onChange={(e) => setCouponForm((f) => ({ ...f, maxUses: e.target.value }))} placeholder="100" />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCouponDialogOpen(false)} disabled={saving}>Cancel</Button>
+            <Button onClick={handleCouponSubmit} disabled={saving || !couponForm.code || !couponForm.discountValue || !couponForm.expiresAt || !couponForm.maxUses}>
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : editingCoupon ? "Save Changes" : "Create"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!couponDeleteDialog} onOpenChange={() => setCouponDeleteDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Coupon</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Are you sure you want to delete coupon <span className="font-mono font-medium text-foreground">{couponDeleteDialog?.label}</span>? This action cannot be undone.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCouponDeleteDialog(null)} disabled={saving}>Cancel</Button>
+            <Button variant="destructive" onClick={() => couponDeleteDialog && handleCouponDelete(couponDeleteDialog.id)} disabled={saving}>
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={waitlistDialogOpen} onOpenChange={setWaitlistDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingWaitlist ? "Edit Waitlist Entry" : "Add to Waitlist"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="wl-email">Guest Email</Label>
+              <Input id="wl-email" type="email" value={waitlistForm.guestEmail} onChange={(e) => setWaitlistForm((f) => ({ ...f, guestEmail: e.target.value }))} placeholder="guest@email.com" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="wl-roomtype">Room Type</Label>
+              <Select value={waitlistForm.roomTypeId} onValueChange={(v: string | null) => v && setWaitlistForm((f) => ({ ...f, roomTypeId: v }))}>
+                <SelectTrigger><SelectValue placeholder="Select room type" /></SelectTrigger>
+                <SelectContent>
+                  {roomTypes.map((rt) => (
+                    <SelectItem key={rt.id} value={rt.id}>{rt.title}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="wl-checkin">Check-in</Label>
+                <Input id="wl-checkin" type="date" value={waitlistForm.requestedCheckIn} onChange={(e) => setWaitlistForm((f) => ({ ...f, requestedCheckIn: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="wl-checkout">Check-out</Label>
+                <Input id="wl-checkout" type="date" value={waitlistForm.requestedCheckOut} onChange={(e) => setWaitlistForm((f) => ({ ...f, requestedCheckOut: e.target.value }))} />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setWaitlistDialogOpen(false)} disabled={saving}>Cancel</Button>
+            <Button onClick={handleWaitlistSubmit} disabled={saving || !waitlistForm.guestEmail || !waitlistForm.roomTypeId || !waitlistForm.requestedCheckIn || !waitlistForm.requestedCheckOut}>
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : editingWaitlist ? "Save Changes" : "Create"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!waitlistDeleteDialog} onOpenChange={() => setWaitlistDeleteDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Waitlist Entry</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Are you sure you want to remove <span className="font-medium text-foreground">{waitlistDeleteDialog?.label}</span> from the waitlist? This action cannot be undone.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setWaitlistDeleteDialog(null)} disabled={saving}>Cancel</Button>
+            <Button variant="destructive" onClick={() => waitlistDeleteDialog && handleWaitlistDelete(waitlistDeleteDialog.id)} disabled={saving}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Delete"}
             </Button>
           </DialogFooter>
