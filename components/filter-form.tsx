@@ -43,7 +43,7 @@ export default function FilterForm({ searchParams }: { searchParams: SearchParam
   }
 
   return (
-    <form method="get" className="space-y-4">
+    <form method="get" className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="space-y-2">
           <Label htmlFor="checkIn">{t("filterCheckIn")}</Label>
@@ -97,19 +97,19 @@ export default function FilterForm({ searchParams }: { searchParams: SearchParam
 
       <input type="hidden" name="amenities" value={selectedAmenities.join(",")} />
 
-      <div className="space-y-2">
+      <div className="space-y-3">
         <Label>{t("filterAmenities")}</Label>
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-2">
           {AVAILABLE_AMENITIES.map((a) => {
             const Icon = a.icon;
             const checked = selectedAmenities.includes(a.value);
             return (
               <label
                 key={a.value}
-                className={`flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm transition-colors ${
                   checked
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border text-muted-foreground hover:border-primary/50"
+                    ? "border-primary bg-primary/8 text-primary"
+                    : "border-border text-muted-foreground hover:border-primary/40"
                 }`}
               >
                 <input

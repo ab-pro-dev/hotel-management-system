@@ -53,26 +53,24 @@ export default async function RoomDetailPage({ params, searchParams }: Props) {
   }`;
 
   return (
-    <div className="space-y-8">
-      <Link href="/rooms" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+    <div className="space-y-10">
+      <Link href="/rooms" className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground">
         <ArrowLeft className="h-4 w-4" />
         {t("backToRooms")}
       </Link>
 
-      <div className="grid gap-8 lg:grid-cols-2">
+      <div className="grid gap-10 lg:grid-cols-2">
         <PhotoGallery urls={roomType.photoUrls} title={roomType.title} />
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl">{roomType.title}</CardTitle>
-            <CardDescription className="text-base">{roomType.description}</CardDescription>
+            <CardTitle className="font-heading text-2xl tracking-tight">{roomType.title}</CardTitle>
+            <CardDescription className="text-base leading-relaxed">{roomType.description}</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center gap-4">
-              <div>
-                <span className="text-3xl font-bold">${roomType.basePrice.toFixed(2)}</span>
-                <span className="ml-1 text-muted-foreground">{t("perNight")}</span>
-              </div>
+          <CardContent className="space-y-8">
+            <div className="flex items-baseline gap-2">
+              <span className="font-heading text-3xl">${roomType.basePrice.toFixed(2)}</span>
+              <span className="text-muted-foreground">{t("perNight")}</span>
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -85,15 +83,15 @@ export default async function RoomDetailPage({ params, searchParams }: Props) {
             </div>
 
             {roomType.amenities.length > 0 && (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <h3 className="text-sm font-medium text-muted-foreground">{t("amenities")}</h3>
                 <div className="flex flex-wrap gap-2">
                   {roomType.amenities.map((amenity) => {
                     const info = AMENITY_LABELS[amenity] ?? { labelKey: amenity, icon: null };
                     const Icon = info.icon;
                     return (
-                      <Badge key={amenity} variant="secondary" className="gap-1">
-                        {Icon && <Icon className="h-3 w-3" />}
+                      <Badge key={amenity} variant="secondary" className="gap-1.5">
+                        {Icon && <Icon className="h-3.5 w-3.5" />}
                         {t(`amenities.${info.labelKey}`)}
                       </Badge>
                     );
@@ -105,7 +103,7 @@ export default async function RoomDetailPage({ params, searchParams }: Props) {
             {checkIn && checkOut && (
               <div className="rounded-lg bg-muted p-4">
                 <p className="text-sm text-muted-foreground">{t("selectedDates")}</p>
-                <p className="font-medium">
+                <p className="mt-1 font-medium">
                   {new Date(checkIn).toLocaleDateString()} — {new Date(checkOut).toLocaleDateString()}
                 </p>
               </div>

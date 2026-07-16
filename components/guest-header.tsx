@@ -40,14 +40,14 @@ export default function GuestHeader() {
   }
 
   return (
-    <header className="border-b bg-background">
+    <header className="border-b border-border bg-background">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
-        <span className="text-lg font-semibold">{t("common.hotelName")}</span>
-        <nav className="flex items-center gap-4 text-sm">
+        <span className="font-heading text-lg tracking-tight">{t("common.hotelName")}</span>
+        <nav className="flex items-center gap-5">
           {(!role || role === "GUEST") && (
             <Link
               href="/rooms"
-              className="text-muted-foreground hover:text-foreground"
+              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               {t("nav.rooms")}
             </Link>
@@ -55,23 +55,23 @@ export default function GuestHeader() {
 
           {role === "ADMIN" && (
             <>
-              <Link href="/admin/manage" className="text-muted-foreground hover:text-foreground">
+              <Link href="/admin/manage" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                 {t("nav.manage")}
               </Link>
-              <Link href="/admin/analytics" className="text-muted-foreground hover:text-foreground">
+              <Link href="/admin/analytics" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                 {t("nav.analytics")}
               </Link>
             </>
           )}
 
           {role === "RECEPTIONIST" && (
-            <Link href="/reception" className="text-muted-foreground hover:text-foreground">
+            <Link href="/reception" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
               {t("nav.reception")}
             </Link>
           )}
 
           {role === "HOUSEKEEPER" && (
-            <Link href="/housekeeping" className="text-muted-foreground hover:text-foreground">
+            <Link href="/housekeeping" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
               {t("nav.housekeeping")}
             </Link>
           )}
@@ -88,13 +88,13 @@ export default function GuestHeader() {
               {locale === "en" ? "EN" : "AM"}
             </Button>
             {open && (
-              <div className="absolute right-0 top-full z-50 mt-1 w-36 rounded-lg border bg-background shadow-md">
+              <div className="absolute right-0 top-full z-50 mt-1 w-36 rounded-lg border border-border bg-background">
                 {LOCALES.map((l) => (
                   <button
                     key={l.value}
                     onClick={() => switchLocale(l.value)}
-                    className={`block w-full px-3 py-2 text-left text-sm hover:bg-accent ${
-                      locale === l.value ? "font-medium bg-accent" : ""
+                    className={`block w-full px-3 py-2 text-left text-sm transition-colors hover:bg-muted ${
+                      locale === l.value ? "font-medium bg-muted" : ""
                     }`}
                   >
                     {l.label}

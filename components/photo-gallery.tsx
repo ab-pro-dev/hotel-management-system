@@ -13,7 +13,7 @@ export default function PhotoGallery({ urls, title }: Props) {
 
   if (urls.length === 0) {
     return (
-      <div className="aspect-video rounded-lg bg-muted flex items-center justify-center text-muted-foreground">
+      <div className="aspect-video rounded-xl bg-muted flex items-center justify-center text-muted-foreground">
         No photos available
       </div>
     );
@@ -21,7 +21,7 @@ export default function PhotoGallery({ urls, title }: Props) {
 
   return (
     <div className="space-y-3">
-      <div className="relative aspect-video overflow-hidden rounded-lg">
+      <div className="relative aspect-video overflow-hidden rounded-xl">
         <Image
           src={urls[active]}
           alt={`${title} — photo ${active + 1}`}
@@ -37,8 +37,10 @@ export default function PhotoGallery({ urls, title }: Props) {
             <button
               key={url}
               onClick={() => setActive(i)}
-              className={`relative h-16 w-24 shrink-0 overflow-hidden rounded-md border-2 transition-colors ${
-                i === active ? "border-primary" : "border-transparent"
+              className={`relative h-16 w-24 shrink-0 overflow-hidden rounded-lg transition-all ${
+                i === active
+                  ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                  : "opacity-60 hover:opacity-100"
               }`}
             >
               <Image

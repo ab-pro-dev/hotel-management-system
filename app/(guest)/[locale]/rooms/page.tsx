@@ -126,31 +126,31 @@ async function RoomList({ searchParams }: { searchParams: SearchParams }) {
         const hasSurge = finalPrice !== basePrice;
 
         return (
-          <Card key={roomType.id}>
+          <Card key={roomType.id} className="flex flex-col">
             <CardHeader>
-              <CardTitle>{roomType.title}</CardTitle>
-              <CardDescription>{roomType.description}</CardDescription>
+              <CardTitle className="font-heading text-lg">{roomType.title}</CardTitle>
+              <CardDescription className="line-clamp-2">{roomType.description}</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-bold">
-                    ${finalPrice.toFixed(2)}
+            <CardContent className="flex-1 space-y-4">
+              <div className="flex items-baseline gap-2">
+                <span className="font-heading text-2xl">
+                  ${finalPrice.toFixed(2)}
+                </span>
+                {hasSurge && (
+                  <span className="text-sm text-muted-foreground line-through">
+                    ${basePrice.toFixed(2)}
                   </span>
-                  {hasSurge && (
-                    <span className="text-sm text-muted-foreground line-through">
-                      ${basePrice.toFixed(2)}
-                    </span>
-                  )}
-                </div>
+                )}
                 <span className="text-sm text-muted-foreground">{t("perNight")}</span>
               </div>
+
               {hasSurge && (
                 <Badge variant="secondary" className="text-xs">
                   {finalPrice > basePrice ? t("peakPricing") : t("offPeakPricing")}
                 </Badge>
               )}
-              <div className="flex items-center gap-2">
+
+              <div className="flex flex-wrap gap-1.5">
                 <Badge variant="secondary">
                   {roomType.capacity} {roomType.capacity === 1 ? t("guest") : t("guests")}
                 </Badge>
@@ -158,16 +158,17 @@ async function RoomList({ searchParams }: { searchParams: SearchParams }) {
                   {roomType.rooms.length} {roomType.rooms.length === 1 ? t("roomAvailable") : t("roomsAvailable")}
                 </Badge>
               </div>
+
               {roomType.amenities.length > 0 && (
-                <div className="flex flex-wrap gap-1 pt-1">
-                  {roomType.amenities.slice(0, 4).map((amenity) => (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {roomType.amenities.slice(0, 3).map((amenity) => (
                     <Badge key={amenity} variant="outline" className="text-xs">
                       {amenity}
                     </Badge>
                   ))}
-                  {roomType.amenities.length > 4 && (
+                  {roomType.amenities.length > 3 && (
                     <Badge variant="outline" className="text-xs">
-                      +{roomType.amenities.length - 4} {t("more")}
+                      +{roomType.amenities.length - 3}
                     </Badge>
                   )}
                 </div>
@@ -194,10 +195,10 @@ export default async function RoomsPage({
   const params = await searchParams;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       <div>
-        <h1 className="text-3xl font-bold">{t("title")}</h1>
-        <p className="text-muted-foreground">
+        <h1 className="font-heading text-3xl tracking-tight sm:text-4xl">{t("title")}</h1>
+        <p className="mt-2 text-muted-foreground">
           {t("subtitle")}
         </p>
       </div>
