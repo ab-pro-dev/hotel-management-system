@@ -179,7 +179,8 @@ export async function cancelBooking(bookingId: string) {
   });
 
   if (!booking) throw new Error("Booking not found");
-  if (booking.guestId !== session.user.id) throw new Error("Unauthorized");
+  const isAdmin = session.user.role === Role.ADMIN;
+  if (booking.guestId !== session.user.id && !isAdmin) throw new Error("Unauthorized");
   if (booking.status !== "CONFIRMED") {
     throw new Error("Only CONFIRMED bookings can be cancelled");
   }
@@ -260,4 +261,84 @@ export async function cancelBooking(bookingId: string) {
   );
 
   return result;
+}
+
+const VALID_TRANSITIONS: Record<string, string[]> = {
+  PENDING: ["CONFIRMED", "CANCELLED"],
+  CONFIRMED: ["CHECKED_IN", "CANCELLED"],
+  CHECKED_IN: ["CHECKED_OUT", "CANCELLED"],
+};
+
+export async function updateBookingStatus(bookingId: string, newStatus: string) {
+  const validBookingId = z.string().min(1, "Booking ID is required").parse(bookingId);
+  const session = await auth();
+  if (!session?.user || session.user.role !== Role.ADMIN) {
+    throw new Error("Unauthorized: ADMIN role required");
+  }
+
+  const booking = await prisma.booking.findUnique({
+    where: { id: validBookingId },
+    include: { payment: true },
+  });
+
+  if (!booking) throw new Error("Booking not found");
+
+  const allowed = VALID_TRANSITIONS[booking.status];
+  if (!allowed || !allowed.includes(newStatus)) {
+    throw new Error(`Cannot transition from ${booking.status} to ${newStatus}`);
+  }
+
+  if (newStatus === "CANCELLED") {
+    return cancelBooking(validBookingId);
+  }
+
+  await logAudit({
+    userId: session.user.id,
+    action: "UPDATE_STATUS",
+    targetTable: "Booking",
+    targetId: booking.id,
+    metadata: { from: booking.status, to: newStatus },
+  });
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.booking.update({
+        where: { id: validBookingId },
+        data: { status: newStatus as "PENDING" | "CONFIRMED" | "CHECKED_IN" | "CHECKED_OUT" | "CANCELLED" },
+      });
+
+      if (newStatus === "CHECKED_IN") {
+        await tx.room.update({
+          where: { id: booking.roomId },
+          data: { status: "OCCUPIED" },
+        });
+        if (booking.checkInToken) {
+          await tx.booking.update({
+            where: { id: validBookingId },
+            data: { checkInToken: null },
+          });
+        }
+      } else if (newStatus === "CHECKED_OUT") {
+        await tx.room.update({
+          where: { id: booking.roomId },
+          data: { status: "DIRTY" },
+        });
+      }
+    });
+  } catch (error) {
+    console.error(`[updateBookingStatus] Failed to update booking ${validBookingId}:`, error);
+    throw new Error("Failed to update booking status. Please try again.");
+  }
+
+  const statusMessages: Record<string, string> = {
+    CONFIRMED: "Your booking has been confirmed.",
+    CHECKED_IN: "You have been checked in. Enjoy your stay!",
+    CHECKED_OUT: "You have been checked out. Thank you for staying with us!",
+  };
+
+  if (statusMessages[newStatus]) {
+    await createNotification(booking.guestId, statusMessages[newStatus]);
+  }
+
+  return { success: true };
 }
