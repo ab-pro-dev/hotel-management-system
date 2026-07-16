@@ -45,3 +45,5 @@ next-env.d.ts
 /graphify-out/
 /.opencode
 /docs
+/.impeccable
+

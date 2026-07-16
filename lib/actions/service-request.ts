@@ -164,3 +164,21 @@ export async function listStaff() {
     throw new Error("Failed to load staff list. Please try again.");
   }
 }
+
+const deleteServiceRequestSchema = z.string().min(1, "Request ID is required");
+
+export async function deleteServiceRequest(id: string) {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "ADMIN") {
+    throw new Error("Unauthorized: ADMIN role required");
+  }
+
+  const validId = deleteServiceRequestSchema.parse(id);
+
+  try {
+    await prisma.serviceRequest.delete({ where: { id: validId } });
+  } catch (error) {
+    console.error(`[deleteServiceRequest] Failed to delete request ${validId}:`, error);
+    throw new Error("Failed to delete service request. Please try again.");
+  }
+}

@@ -49,7 +49,7 @@ import {
   Clock,
 } from "lucide-react";
 import { createRoomType, updateRoomType, deleteRoomType } from "@/lib/actions/room-type";
-import { createRoom, updateRoomStatus } from "@/lib/actions/room";
+import { createRoom, updateRoomStatus, deleteRoom } from "@/lib/actions/room";
 import { createStaffUser, updateUserRole, deactivateUser, reactivateUser } from "@/lib/actions/user";
 import { createProperty, updateProperty, deleteProperty } from "@/lib/actions/property";
 import { createCoupon, updateCoupon, deleteCoupon } from "@/lib/actions/coupon";
@@ -159,6 +159,7 @@ export default function ManageView({
   const [roomForm, setRoomForm] = useState({ roomNumber: "", roomTypeId: "" });
 
   const [deleteDialog, setDeleteDialog] = useState<{ type: "room-type"; id: string; label: string } | null>(null);
+  const [roomDeleteDialog, setRoomDeleteDialog] = useState<{ id: string; label: string } | null>(null);
 
   const [staffDialogOpen, setStaffDialogOpen] = useState(false);
   const [staffForm, setStaffForm] = useState({ name: "", email: "", role: "" });
@@ -254,6 +255,22 @@ export default function ManageView({
     } catch (e) {
       console.error(e);
       setError(e instanceof Error ? e.message : "Failed to delete room type.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleRoomDelete(id: string) {
+    setError(null);
+    setSaving(true);
+    try {
+      await deleteRoom(id);
+      setRooms((prev) => prev.filter((r) => r.id !== id));
+      setRoomDeleteDialog(null);
+      router.refresh();
+    } catch (e) {
+      console.error(e);
+      setError(e instanceof Error ? e.message : "Failed to delete room.");
     } finally {
       setSaving(false);
     }
@@ -712,12 +729,13 @@ export default function ManageView({
                     <TableHead>Room #</TableHead>
                     <TableHead>Room Type</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {rooms.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
+                      <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
                         No rooms yet.
                       </TableCell>
                     </TableRow>
@@ -745,6 +763,16 @@ export default function ManageView({
                               ))}
                             </SelectContent>
                           </Select>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => setRoomDeleteDialog({ id: room.id, label: room.roomNumber })}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))
@@ -1260,6 +1288,29 @@ export default function ManageView({
             <Button
               variant="destructive"
               onClick={() => deleteDialog && handleRtDelete(deleteDialog.id)}
+              disabled={saving}
+            >
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!roomDeleteDialog} onOpenChange={() => setRoomDeleteDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Room</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Are you sure you want to delete room <span className="font-medium text-foreground">{roomDeleteDialog?.label}</span>? This action cannot be undone.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRoomDeleteDialog(null)} disabled={saving}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => roomDeleteDialog && handleRoomDelete(roomDeleteDialog.id)}
               disabled={saving}
             >
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Delete"}

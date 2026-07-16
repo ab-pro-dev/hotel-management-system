@@ -170,6 +170,7 @@ model Review {
   bookingId String   @unique
   rating    Int
   comment   String
+  hidden    Boolean  @default(false)
   createdAt DateTime @default(now())
 }
 

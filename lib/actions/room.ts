@@ -67,3 +67,30 @@ export async function updateRoomStatus(
     throw new Error("Failed to update room status. Please try again.");
   }
 }
+
+const deleteRoomSchema = z.string().min(1, "Room ID is required");
+
+export async function deleteRoom(id: string) {
+  const user = await requireAdmin();
+  const validId = deleteRoomSchema.parse(id);
+
+  const activeBookings = await prisma.booking.count({
+    where: {
+      roomId: validId,
+      status: { in: ["PENDING", "CONFIRMED", "CHECKED_IN"] },
+    },
+  });
+
+  if (activeBookings > 0) {
+    throw new Error(`Cannot delete room with ${activeBookings} active booking(s). Check out or cancel them first.`);
+  }
+
+  try {
+    const room = await prisma.room.delete({ where: { id: validId } });
+    await logAudit({ userId: user.id, action: "DELETE", targetTable: "Room", targetId: room.id, metadata: { roomNumber: room.roomNumber, roomTypeId: room.roomTypeId } });
+    return room;
+  } catch (error) {
+    console.error(`[deleteRoom] Failed to delete room ${validId}:`, error);
+    throw new Error("Failed to delete room. Please try again.");
+  }
+}
