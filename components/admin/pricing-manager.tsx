@@ -210,10 +210,10 @@ export default function PricingManager({ roomTypes }: Props) {
                     <span className="text-sm font-medium">{o.date}</span>
                     <Badge variant="secondary">${o.overridePrice.toFixed(2)}</Badge>
                     {selectedRT && o.overridePrice < Number(selectedRT.basePrice) && (
-                      <Badge variant="outline" className="text-green-600">Discount</Badge>
+                      <Badge variant="outline" className="text-primary">Discount</Badge>
                     )}
                     {selectedRT && o.overridePrice > Number(selectedRT.basePrice) && (
-                      <Badge variant="outline" className="text-red-600">Surcharge</Badge>
+                      <Badge variant="outline" className="text-destructive">Surcharge</Badge>
                     )}
                   </div>
                   <Button

@@ -78,19 +78,19 @@ type StaffUser = {
 const ROOM_STATUSES = ["AVAILABLE", "OCCUPIED", "DIRTY", "IN_PROGRESS", "MAINTENANCE"] as const;
 
 const STATUS_COLORS: Record<string, string> = {
-  AVAILABLE: "bg-green-100 text-green-800",
-  OCCUPIED: "bg-blue-100 text-blue-800",
-  DIRTY: "bg-yellow-100 text-yellow-800",
-  IN_PROGRESS: "bg-orange-100 text-orange-800",
-  MAINTENANCE: "bg-red-100 text-red-800",
+  AVAILABLE: "bg-primary/10 text-primary",
+  OCCUPIED: "bg-destructive/10 text-destructive",
+  DIRTY: "bg-secondary text-secondary-foreground",
+  IN_PROGRESS: "bg-primary/5 text-primary",
+  MAINTENANCE: "bg-muted text-muted-foreground",
 };
 
 const STAFF_ROLES = ["RECEPTIONIST", "HOUSEKEEPER", "ADMIN"] as const;
 
 const ROLE_COLORS: Record<string, string> = {
-  ADMIN: "bg-purple-100 text-purple-800",
-  RECEPTIONIST: "bg-blue-100 text-blue-800",
-  HOUSEKEEPER: "bg-green-100 text-green-800",
+  ADMIN: "bg-primary/10 text-primary",
+  RECEPTIONIST: "bg-secondary text-secondary-foreground",
+  HOUSEKEEPER: "bg-muted text-muted-foreground",
 };
 
 type Tab = "room-types" | "rooms" | "staff";
@@ -568,9 +568,9 @@ export default function ManageView({
                         </TableCell>
                         <TableCell>
                           {user.isActive ? (
-                            <Badge variant="secondary" className="bg-green-100 text-green-800 border-0">Active</Badge>
+                            <Badge variant="secondary" className="bg-primary/10 text-primary border-0">Active</Badge>
                           ) : (
-                            <Badge variant="secondary" className="bg-gray-100 text-gray-800 border-0">Inactive</Badge>
+                            <Badge variant="secondary" className="bg-muted text-muted-foreground border-0">Inactive</Badge>
                           )}
                         </TableCell>
                         <TableCell className="text-right">
@@ -595,7 +595,7 @@ export default function ManageView({
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="text-green-600 hover:text-green-700"
+                                className="text-primary hover:text-primary/80"
                                 onClick={() => handleReactivate(user)}
                               >
                                 <UserCheck className="h-4 w-4" />

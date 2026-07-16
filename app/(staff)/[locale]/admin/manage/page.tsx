@@ -67,7 +67,7 @@ export default async function ManagePage({ params }: { params: Promise<{ locale:
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Manage</h1>
+        <h1 className="font-heading text-2xl">Manage</h1>
         <p className="text-muted-foreground">
           Create, edit, and delete room types, rooms, and staff.
         </p>

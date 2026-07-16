@@ -27,9 +27,9 @@ const TYPE_LABELS: Record<ServiceRequestType, string> = {
 };
 
 const STATUS_STYLES: Record<ServiceRequestStatus, string> = {
-  OPEN: "bg-amber-100 text-amber-800",
-  ACKNOWLEDGED: "bg-blue-100 text-blue-800",
-  RESOLVED: "bg-emerald-100 text-emerald-800",
+  OPEN: "bg-secondary text-secondary-foreground",
+  ACKNOWLEDGED: "bg-primary/10 text-primary",
+  RESOLVED: "bg-primary text-primary-foreground",
 };
 
 const CHANNELS = ["housekeeping-requests", "front-desk-requests", "maintenance-requests"];

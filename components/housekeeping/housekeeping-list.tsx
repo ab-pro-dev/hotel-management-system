@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { cycleRoomStatus } from "@/lib/actions/housekeeping";
 import { queueAction } from "@/lib/offline-queue";
 import { Loader2, WifiOff, AlertCircle, X } from "lucide-react";
@@ -13,9 +15,9 @@ type Room = {
   roomType: { title: string };
 };
 
-const STATUS_LABELS: Record<string, { label: string; action: string }> = {
-  DIRTY: { label: "Needs Cleaning", action: "Start" },
-  IN_PROGRESS: { label: "Cleaning", action: "Done" },
+const STATUS_LABELS: Record<string, { label: string; action: string; badge: string }> = {
+  DIRTY: { label: "Needs Cleaning", action: "Start", badge: "bg-secondary text-secondary-foreground" },
+  IN_PROGRESS: { label: "Cleaning", action: "Done", badge: "bg-primary/10 text-primary" },
 };
 
 export default function HousekeepingList({ initialRooms }: { initialRooms: Room[] }) {
@@ -73,46 +75,50 @@ export default function HousekeepingList({ initialRooms }: { initialRooms: Room[
   }
 
   return (
-    <div className="space-y-3">
-      {error && (
-        <div className="flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          <span className="flex-1">{error}</span>
-          <button onClick={() => setError(null)} className="shrink-0">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      )}
-      <div className="divide-y rounded-lg border">
-      {visibleRooms.map((room) => {
-        const info = STATUS_LABELS[room.status];
-        const isPending = pendingIds.has(room.id);
-
-        return (
-          <div key={room.id} className="flex items-center justify-between gap-4 p-4">
-            <div className="min-w-0">
-              <p className="text-lg font-medium">Room {room.roomNumber}</p>
-              <p className="text-sm text-muted-foreground">{room.roomType.title}</p>
-              <p className="text-sm text-muted-foreground">{info.label}</p>
+    <Card>
+      <CardContent className="p-0">
+        <div className="divide-y">
+          {error && (
+            <div className="flex items-center gap-2 px-4 py-3 text-sm text-destructive">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span className="flex-1">{error}</span>
+              <button onClick={() => setError(null)} className="shrink-0">
+                <X className="h-4 w-4" />
+              </button>
             </div>
-            <Button
-              size="lg"
-              className="h-12 min-w-[100px] shrink-0"
-              onClick={() => handleCycle(room)}
-              disabled={loadingId === room.id}
-            >
-              {loadingId === room.id ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : isPending ? (
-                <WifiOff className="h-5 w-5" />
-              ) : (
-                info.action
-              )}
-            </Button>
-          </div>
-        );
-      })}
-      </div>
-    </div>
+          )}
+          {visibleRooms.map((room) => {
+            const info = STATUS_LABELS[room.status];
+            const isPending = pendingIds.has(room.id);
+
+            return (
+              <div key={room.id} className="flex items-center justify-between gap-4 px-4 py-4">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-lg font-medium">Room {room.roomNumber}</p>
+                    <Badge className={info.badge}>{info.label}</Badge>
+                  </div>
+                  <p className="mt-0.5 text-sm text-muted-foreground">{room.roomType.title}</p>
+                </div>
+                <Button
+                  size="lg"
+                  className="h-12 min-w-[100px] shrink-0"
+                  onClick={() => handleCycle(room)}
+                  disabled={loadingId === room.id}
+                >
+                  {loadingId === room.id ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : isPending ? (
+                    <WifiOff className="h-5 w-5" />
+                  ) : (
+                    info.action
+                  )}
+                </Button>
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
   );
 }

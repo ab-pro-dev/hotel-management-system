@@ -24,7 +24,7 @@ export default async function AnalyticsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Analytics</h1>
+        <h1 className="font-heading text-2xl">Analytics</h1>
         <p className="text-muted-foreground">Revenue and occupancy insights.</p>
       </div>
       <AnalyticsCharts

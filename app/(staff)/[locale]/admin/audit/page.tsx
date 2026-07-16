@@ -13,13 +13,13 @@ export const metadata: Metadata = {
 };
 
 const ACTION_COLORS: Record<string, string> = {
-  CREATE: "bg-green-100 text-green-800",
-  UPDATE: "bg-blue-100 text-blue-800",
-  UPDATE_STATUS: "bg-blue-100 text-blue-800",
-  DELETE: "bg-red-100 text-red-800",
-  SET_OVERRIDE: "bg-yellow-100 text-yellow-800",
-  REMOVE_OVERRIDE: "bg-orange-100 text-orange-800",
-  CANCEL: "bg-red-100 text-red-800",
+  CREATE: "bg-primary/10 text-primary",
+  UPDATE: "bg-primary/5 text-primary",
+  UPDATE_STATUS: "bg-primary/5 text-primary",
+  DELETE: "bg-destructive/10 text-destructive",
+  SET_OVERRIDE: "bg-secondary text-secondary-foreground",
+  REMOVE_OVERRIDE: "bg-secondary text-secondary-foreground",
+  CANCEL: "bg-destructive/10 text-destructive",
 };
 
 export default async function AuditLogPage({ params }: { params: Promise<{ locale: string }> }) {
@@ -38,7 +38,7 @@ export default async function AuditLogPage({ params }: { params: Promise<{ local
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Audit Log</h1>
+        <h1 className="font-heading text-2xl">Audit Log</h1>
         <p className="text-muted-foreground">Recent admin actions across the system.</p>
       </div>
 
@@ -60,7 +60,7 @@ export default async function AuditLogPage({ params }: { params: Promise<{ local
                   className="flex flex-col gap-1 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="outline" className={ACTION_COLORS[log.action] ?? "bg-gray-100 text-gray-800"}>
+                    <Badge variant="outline" className={ACTION_COLORS[log.action] ?? "bg-muted text-muted-foreground"}>
                       {log.action}
                     </Badge>
                     <Badge variant="secondary">{log.targetTable}</Badge>

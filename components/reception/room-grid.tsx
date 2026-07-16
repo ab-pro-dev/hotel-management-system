@@ -22,29 +22,29 @@ type RoomData = {
 
 const STATUS_STYLES: Record<string, { bg: string; border: string; badge: string }> = {
   AVAILABLE: {
-    bg: "bg-emerald-50",
-    border: "border-emerald-300",
-    badge: "bg-emerald-100 text-emerald-800",
+    bg: "bg-card",
+    border: "border-primary/40",
+    badge: "bg-primary/10 text-primary",
   },
   OCCUPIED: {
-    bg: "bg-red-50",
-    border: "border-red-300",
-    badge: "bg-red-100 text-red-800",
+    bg: "bg-card",
+    border: "border-destructive/40",
+    badge: "bg-destructive/10 text-destructive",
   },
   DIRTY: {
-    bg: "bg-amber-50",
-    border: "border-amber-300",
-    badge: "bg-amber-100 text-amber-800",
+    bg: "bg-card",
+    border: "border-secondary",
+    badge: "bg-secondary text-secondary-foreground",
   },
   IN_PROGRESS: {
-    bg: "bg-sky-50",
-    border: "border-sky-300",
-    badge: "bg-sky-100 text-sky-800",
+    bg: "bg-card",
+    border: "border-primary/20",
+    badge: "bg-primary/5 text-primary",
   },
   MAINTENANCE: {
-    bg: "bg-gray-100",
-    border: "border-gray-300",
-    badge: "bg-gray-200 text-gray-700",
+    bg: "bg-card",
+    border: "border-muted",
+    badge: "bg-muted text-muted-foreground",
   },
 };
 

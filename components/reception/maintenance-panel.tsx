@@ -37,16 +37,16 @@ const PRIORITY_ORDER: Record<string, number> = {
 };
 
 const PRIORITY_COLORS: Record<string, string> = {
-  URGENT: "bg-red-100 text-red-800 border-red-200",
-  HIGH: "bg-orange-100 text-orange-800 border-orange-200",
-  MEDIUM: "bg-yellow-100 text-yellow-800 border-yellow-200",
-  LOW: "bg-blue-100 text-blue-800 border-blue-200",
+  URGENT: "bg-destructive/10 text-destructive border-destructive/20",
+  HIGH: "bg-destructive/5 text-destructive border-destructive/10",
+  MEDIUM: "bg-secondary text-secondary-foreground border-secondary",
+  LOW: "bg-muted text-muted-foreground border-muted",
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  OPEN: "bg-red-100 text-red-800",
-  ACKNOWLEDGED: "bg-yellow-100 text-yellow-800",
-  RESOLVED: "bg-green-100 text-green-800",
+  OPEN: "bg-secondary text-secondary-foreground",
+  ACKNOWLEDGED: "bg-primary/10 text-primary",
+  RESOLVED: "bg-primary text-primary-foreground",
 };
 
 type Props = {

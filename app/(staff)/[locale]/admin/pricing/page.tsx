@@ -26,7 +26,7 @@ export default async function PricingPage({ params }: { params: Promise<{ locale
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Pricing Overrides</h1>
+        <h1 className="font-heading text-2xl">Pricing Overrides</h1>
         <p className="text-muted-foreground">
           Set per-date price overrides that bypass seasonal and occupancy calculations.
         </p>
