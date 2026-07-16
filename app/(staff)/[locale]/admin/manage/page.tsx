@@ -15,7 +15,7 @@ export default async function ManagePage({ params }: { params: Promise<{ locale:
   const session = await auth();
   if (!session?.user || session.user.role !== "ADMIN") redirect(`/${locale}/login`);
 
-  const [roomTypes, rooms] = await Promise.all([
+  const [roomTypes, rooms, staffUsers] = await Promise.all([
     prisma.roomType.findMany({
       include: { rooms: true },
       orderBy: { title: "asc" },
@@ -23,6 +23,18 @@ export default async function ManagePage({ params }: { params: Promise<{ locale:
     prisma.room.findMany({
       include: { roomType: true },
       orderBy: { roomNumber: "asc" },
+    }),
+    prisma.user.findMany({
+      where: { role: { in: ["RECEPTIONIST", "HOUSEKEEPER", "ADMIN"] } },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: "desc" },
     }),
   ]);
 
@@ -43,15 +55,28 @@ export default async function ManagePage({ params }: { params: Promise<{ locale:
     roomType: { id: r.roomType.id, title: r.roomType.title },
   }));
 
+  const serializedStaff = staffUsers.map((u) => ({
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    role: u.role,
+    isActive: u.isActive,
+    createdAt: u.createdAt.toISOString(),
+  }));
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Manage</h1>
         <p className="text-muted-foreground">
-          Create, edit, and delete room types and rooms.
+          Create, edit, and delete room types, rooms, and staff.
         </p>
       </div>
-      <ManageView roomTypes={serializedRoomTypes} rooms={serializedRooms} />
+      <ManageView
+        roomTypes={serializedRoomTypes}
+        rooms={serializedRooms}
+        staffUsers={serializedStaff}
+      />
     </div>
   );
 }

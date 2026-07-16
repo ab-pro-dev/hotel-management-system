@@ -37,11 +37,17 @@ import {
   Loader2,
   BedDouble,
   LayoutGrid,
+  Users,
   AlertCircle,
   X,
+  Copy,
+  Check,
+  UserCheck,
+  UserX,
 } from "lucide-react";
 import { createRoomType, updateRoomType, deleteRoomType } from "@/lib/actions/room-type";
 import { createRoom, updateRoomStatus } from "@/lib/actions/room";
+import { createStaffUser, updateUserRole, deactivateUser, reactivateUser } from "@/lib/actions/user";
 
 type RoomType = {
   id: string;
@@ -60,6 +66,15 @@ type Room = {
   roomType: { id: string; title: string };
 };
 
+type StaffUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+  createdAt: string;
+};
+
 const ROOM_STATUSES = ["AVAILABLE", "OCCUPIED", "DIRTY", "IN_PROGRESS", "MAINTENANCE"] as const;
 
 const STATUS_COLORS: Record<string, string> = {
@@ -70,19 +85,30 @@ const STATUS_COLORS: Record<string, string> = {
   MAINTENANCE: "bg-red-100 text-red-800",
 };
 
-type Tab = "room-types" | "rooms";
+const STAFF_ROLES = ["RECEPTIONIST", "HOUSEKEEPER", "ADMIN"] as const;
+
+const ROLE_COLORS: Record<string, string> = {
+  ADMIN: "bg-purple-100 text-purple-800",
+  RECEPTIONIST: "bg-blue-100 text-blue-800",
+  HOUSEKEEPER: "bg-green-100 text-green-800",
+};
+
+type Tab = "room-types" | "rooms" | "staff";
 
 export default function ManageView({
   roomTypes: initialRoomTypes,
   rooms: initialRooms,
+  staffUsers: initialStaff,
 }: {
   roomTypes: RoomType[];
   rooms: Room[];
+  staffUsers: StaffUser[];
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("room-types");
   const [roomTypes, setRoomTypes] = useState(initialRoomTypes);
   const [rooms, setRooms] = useState(initialRooms);
+  const [staffUsers, setStaffUsers] = useState(initialStaff);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -94,6 +120,13 @@ export default function ManageView({
   const [roomForm, setRoomForm] = useState({ roomNumber: "", roomTypeId: "" });
 
   const [deleteDialog, setDeleteDialog] = useState<{ type: "room-type"; id: string; label: string } | null>(null);
+
+  const [staffDialogOpen, setStaffDialogOpen] = useState(false);
+  const [staffForm, setStaffForm] = useState({ name: "", email: "", role: "" });
+  const [createdCredentials, setCreatedCredentials] = useState<{ email: string; tempPassword: string } | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const [roleDialog, setRoleDialog] = useState<{ user: StaffUser; newRole: string } | null>(null);
 
   function openRtCreate() {
     setEditingRt(null);
@@ -214,6 +247,109 @@ export default function ManageView({
     }
   }
 
+  async function handleStaffCreate() {
+    setError(null);
+    setSaving(true);
+    try {
+      const result = await createStaffUser({
+        name: staffForm.name,
+        email: staffForm.email,
+        role: staffForm.role as "RECEPTIONIST" | "HOUSEKEEPER" | "ADMIN",
+      });
+      setStaffUsers((prev) => [
+        {
+          id: result.user.id,
+          name: result.user.name,
+          email: result.user.email,
+          role: result.user.role,
+          isActive: result.user.isActive,
+          createdAt: result.user.createdAt.toISOString(),
+        },
+        ...prev,
+      ]);
+      setCreatedCredentials({ email: result.user.email, tempPassword: result.tempPassword });
+      setStaffForm({ name: "", email: "", role: "" });
+      router.refresh();
+    } catch (e) {
+      console.error(e);
+      setError(e instanceof Error ? e.message : "Failed to create staff user.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleRoleChange() {
+    if (!roleDialog) return;
+    setError(null);
+    setSaving(true);
+    try {
+      await updateUserRole(roleDialog.user.id, { role: roleDialog.newRole as "RECEPTIONIST" | "HOUSEKEEPER" | "ADMIN" });
+      setStaffUsers((prev) =>
+        prev.map((u) => (u.id === roleDialog.user.id ? { ...u, role: roleDialog.newRole } : u))
+      );
+      setRoleDialog(null);
+      router.refresh();
+    } catch (e) {
+      console.error(e);
+      setError(e instanceof Error ? e.message : "Failed to update role.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDeactivate(user: StaffUser) {
+    setError(null);
+    setSaving(true);
+    try {
+      await deactivateUser(user.id);
+      setStaffUsers((prev) =>
+        prev.map((u) => (u.id === user.id ? { ...u, isActive: false } : u))
+      );
+      router.refresh();
+    } catch (e) {
+      console.error(e);
+      setError(e instanceof Error ? e.message : "Failed to deactivate user.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleReactivate(user: StaffUser) {
+    setError(null);
+    setSaving(true);
+    try {
+      await reactivateUser(user.id);
+      setStaffUsers((prev) =>
+        prev.map((u) => (u.id === user.id ? { ...u, isActive: true } : u))
+      );
+      router.refresh();
+    } catch (e) {
+      console.error(e);
+      setError(e instanceof Error ? e.message : "Failed to reactivate user.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function copyCredentials() {
+    if (!createdCredentials) return;
+    const text = `Email: ${createdCredentials.email}\nPassword: ${createdCredentials.tempPassword}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      const input = document.createElement("input");
+      input.value = text;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand("copy");
+      document.body.removeChild(input);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }
+
   return (
     <div className="space-y-6">
       {error && (
@@ -249,6 +385,18 @@ export default function ManageView({
           <BedDouble className="h-4 w-4" />
           Rooms
           <Badge variant="secondary" className="ml-1">{rooms.length}</Badge>
+        </button>
+        <button
+          onClick={() => setTab("staff")}
+          className={`flex items-center gap-2 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+            tab === "staff"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Users className="h-4 w-4" />
+          Staff
+          <Badge variant="secondary" className="ml-1">{staffUsers.length}</Badge>
         </button>
       </div>
 
@@ -381,6 +529,90 @@ export default function ManageView({
         </div>
       )}
 
+      {tab === "staff" && (
+        <div className="space-y-4">
+          <div className="flex justify-end">
+            <Button onClick={() => { setStaffForm({ name: "", email: "", role: "" }); setCreatedCredentials(null); setStaffDialogOpen(true); }} className="gap-1">
+              <Plus className="h-4 w-4" />
+              Add Staff
+            </Button>
+          </div>
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {staffUsers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                        No staff users yet.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    staffUsers.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell className="font-medium">{user.name}</TableCell>
+                        <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className={`${ROLE_COLORS[user.role]} border-0`}>
+                            {user.role}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {user.isActive ? (
+                            <Badge variant="secondary" className="bg-green-100 text-green-800 border-0">Active</Badge>
+                          ) : (
+                            <Badge variant="secondary" className="bg-gray-100 text-gray-800 border-0">Inactive</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setRoleDialog({ user, newRole: user.role })}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            {user.isActive ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive hover:text-destructive"
+                                onClick={() => handleDeactivate(user)}
+                              >
+                                <UserX className="h-4 w-4" />
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-green-600 hover:text-green-700"
+                                onClick={() => handleReactivate(user)}
+                              >
+                                <UserCheck className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       <Dialog open={rtDialogOpen} onOpenChange={setRtDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -482,6 +714,121 @@ export default function ManageView({
             </Button>
             <Button onClick={handleRoomCreate} disabled={saving || !roomForm.roomNumber || !roomForm.roomTypeId}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={staffDialogOpen} onOpenChange={setStaffDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{createdCredentials ? "Staff Account Created" : "Add Staff Member"}</DialogTitle>
+          </DialogHeader>
+          {createdCredentials ? (
+            <div className="space-y-4 py-2">
+              <p className="text-sm text-muted-foreground">
+                Share these credentials with the staff member. The password is temporary and should be changed on first login.
+              </p>
+              <div className="rounded-lg bg-muted p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Email</span>
+                  <span className="font-medium font-mono text-sm">{createdCredentials.email}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Password</span>
+                  <span className="font-medium font-mono text-sm">{createdCredentials.tempPassword}</span>
+                </div>
+              </div>
+              <Button variant="outline" className="w-full gap-2" onClick={copyCredentials}>
+                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                {copied ? "Copied!" : "Copy Credentials"}
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label htmlFor="staff-name">Name</Label>
+                <Input
+                  id="staff-name"
+                  value={staffForm.name}
+                  onChange={(e) => setStaffForm((f) => ({ ...f, name: e.target.value }))}
+                  placeholder="Full name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="staff-email">Email</Label>
+                <Input
+                  id="staff-email"
+                  type="email"
+                  value={staffForm.email}
+                  onChange={(e) => setStaffForm((f) => ({ ...f, email: e.target.value }))}
+                  placeholder="staff@hotel.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="staff-role">Role</Label>
+                <Select
+                  value={staffForm.role}
+                  onValueChange={(v: string | null) => v && setStaffForm((f) => ({ ...f, role: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STAFF_ROLES.map((r) => (
+                      <SelectItem key={r} value={r}>
+                        {r}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setStaffDialogOpen(false); setCreatedCredentials(null); }} disabled={saving}>
+              {createdCredentials ? "Close" : "Cancel"}
+            </Button>
+            {!createdCredentials && (
+              <Button onClick={handleStaffCreate} disabled={saving || !staffForm.name || !staffForm.email || !staffForm.role}>
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create Account"}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!roleDialog} onOpenChange={() => setRoleDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change Role</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-muted-foreground">
+              Change the role for <span className="font-medium text-foreground">{roleDialog?.user.name}</span>
+            </p>
+            <Select
+              value={roleDialog?.newRole ?? ""}
+              onValueChange={(v: string | null) => v && setRoleDialog((d) => d ? { ...d, newRole: v } : null)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {STAFF_ROLES.map((r) => (
+                  <SelectItem key={r} value={r}>
+                    {r}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRoleDialog(null)} disabled={saving}>
+              Cancel
+            </Button>
+            <Button onClick={handleRoleChange} disabled={saving || roleDialog?.newRole === roleDialog?.user.role}>
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
             </Button>
           </DialogFooter>
         </DialogContent>

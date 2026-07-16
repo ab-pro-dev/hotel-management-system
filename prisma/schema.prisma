@@ -17,6 +17,7 @@ model User {
   email         String           @unique
   passwordHash  String?
   role          Role             @default(GUEST)
+  isActive      Boolean          @default(true)
   loyaltyPoints Int              @default(0)
   loyaltyTier   LoyaltyTier      @default(BRONZE)
   bookings      Booking[]
