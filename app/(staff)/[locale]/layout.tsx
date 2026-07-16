@@ -1,7 +1,7 @@
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { notFound } from "next/navigation";
-import StaffHeader from "@/components/staff-header";
+import ConditionalStaffHeader from "@/components/conditional-staff-header";
 
 export default async function StaffLayout({
   children,
@@ -18,7 +18,7 @@ export default async function StaffLayout({
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
       <div className="min-h-screen">
-        <StaffHeader />
+        <ConditionalStaffHeader />
         <main className="mx-auto max-w-7xl px-4 py-6">{children}</main>
       </div>
     </NextIntlClientProvider>
