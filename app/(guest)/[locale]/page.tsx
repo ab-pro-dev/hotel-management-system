@@ -1,14 +1,15 @@
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { Metadata } from "next";
-import { Star } from "lucide-react";
+import { Star, Wifi, Waves, UtensilsCrossed, Dumbbell, Wine, Car, ConciergeBell, Sparkles } from "lucide-react";
 import prisma from "@/lib/prisma";
 import BookingWidget from "@/components/booking-widget";
+import GuestNavbar from "@/components/guest-navbar";
 
 export const metadata: Metadata = {
-  title: "Grand Raya Hotel — Boutique Luxury Redefined",
+  title: "Grand Raya Hotel — Warm Luxury Resort",
   description:
-    "Experience refined elegance at Grand Raya Hotel. Modern architecture, serene surroundings, and impeccable hospitality await.",
+    "Experience warm, refined elegance at Grand Raya Hotel. Lush surroundings, burnished gold accents, and impeccable hospitality.",
 };
 
 async function getFeaturedRooms() {
@@ -40,7 +41,10 @@ async function getTopReviews() {
   });
 }
 
-// Map amenity values to readable labels
+async function getProperty() {
+  return prisma.property.findFirst();
+}
+
 const AMENITY_LABELS: Record<string, string> = {
   wifi: "Wi-Fi",
   tv: "TV",
@@ -54,20 +58,35 @@ const AMENITY_LABELS: Record<string, string> = {
   "pet-friendly": "Pet Friendly",
 };
 
+const HOTEL_AMENITIES = [
+  { icon: Wifi, label: "High-Speed Wi-Fi" },
+  { icon: Waves, label: "Swimming Pool" },
+  { icon: UtensilsCrossed, label: "Fine Dining" },
+  { icon: Dumbbell, label: "Fitness Center" },
+  { icon: Wine, label: "Rooftop Bar" },
+  { icon: Car, label: "Valet Parking" },
+  { icon: ConciergeBell, label: "24/7 Concierge" },
+  { icon: Sparkles, label: "Luxury Spa" },
+];
+
 export default async function HomePage() {
-  const [featuredRooms, topReviews] = await Promise.all([
+  const [featuredRooms, topReviews, property] = await Promise.all([
     getFeaturedRooms(),
     getTopReviews(),
+    getProperty(),
   ]);
 
   return (
     <div className="flex min-h-screen flex-col">
+      {/* ── Sticky Navbar ──────────────────────────────────── */}
+      <GuestNavbar />
+
       {/* ── Hero Section ─────────────────────────────────────── */}
-      <section className="relative flex min-h-screen items-center justify-center overflow-hidden">
+      <section id="top" className="relative flex min-h-screen items-center justify-center overflow-hidden">
         {/* Background image */}
         <Image
           src="/hero.jpg"
-          alt="Grand Raya Hotel exterior at dusk"
+          alt="Grand Raya Hotel — warm golden-hour lighting over lush tropical gardens"
           fill
           priority
           className="object-cover object-center"
@@ -75,155 +94,62 @@ export default async function HomePage() {
           sizes="100vw"
         />
 
-        {/* Dark overlay gradient for text legibility */}
+        {/* Warm overlay gradient */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(to bottom, rgba(20,16,12,0.45) 0%, rgba(20,16,12,0.65) 50%, rgba(20,16,12,0.88) 100%)",
+              "linear-gradient(to bottom, oklch(0.20 0.04 50 / 0.35) 0%, oklch(0.20 0.04 50 / 0.50) 50%, oklch(0.20 0.04 50 / 0.80) 100%)",
           }}
         />
-
-        {/* Top navigation bar */}
-        <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-6 py-5 sm:px-10 md:px-16">
-          <span
-            className="text-sm tracking-[0.35em] uppercase"
-            style={{ color: "rgba(235,225,210,0.85)", fontFamily: "var(--font-heading)" }}
-          >
-            Grand Raya
-          </span>
-          <nav className="flex items-center gap-6">
-            <Link
-              href="/rooms"
-              className="text-xs tracking-[0.2em] uppercase transition-colors duration-300"
-              style={{ color: "rgba(235,225,210,0.7)" }}
-            >
-              Rooms
-            </Link>
-            <Link
-              href="/login"
-              className="text-xs tracking-[0.2em] uppercase transition-colors duration-300"
-              style={{ color: "rgba(235,225,210,0.7)" }}
-            >
-              Sign In
-            </Link>
-          </nav>
-        </header>
 
         {/* Hero content */}
         <div className="relative z-10 flex w-full flex-col items-center px-6 text-center">
           {/* Decorative line */}
-          <div
-            className="mb-8 h-px w-12"
-            style={{ backgroundColor: "rgba(235,225,210,0.35)" }}
-          />
+          <div className="mb-8 h-px w-12 bg-primary/40" />
 
-          <p
-            className="mb-4 text-xs tracking-[0.4em] uppercase"
-            style={{ color: "rgba(235,225,210,0.7)" }}
-          >
-            Boutique Luxury
+          <p className="mb-4 text-xs tracking-[0.4em] uppercase text-primary/80">
+            Warm Luxury Resort
           </p>
 
-          <h1
-            className="max-w-2xl text-4xl leading-tight tracking-tight sm:text-5xl md:text-6xl lg:text-7xl"
-            style={{
-              fontFamily: "var(--font-heading)",
-              color: "rgba(245,240,230,0.95)",
-              fontWeight: 400,
-            }}
-          >
+          <h1 className="max-w-2xl text-4xl leading-tight tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl">
             Grand Raya Hotel
           </h1>
 
-          <p
-            className="mt-5 max-w-md text-sm leading-relaxed sm:text-base"
-            style={{ color: "rgba(235,225,210,0.65)" }}
-          >
-            Where modern architecture meets timeless hospitality.
+          <p className="mt-5 max-w-md text-sm leading-relaxed text-foreground/60 sm:text-base">
+            Where burnished gold meets timeless hospitality.
           </p>
 
           {/* ── Inline Booking Widget ────── */}
           <BookingWidget />
 
           {/* Decorative line */}
-          <div
-            className="mt-16 h-px w-12"
-            style={{ backgroundColor: "rgba(235,225,210,0.2)" }}
-          />
+          <div className="mt-16 h-px w-12 bg-primary/20" />
         </div>
 
         {/* Scroll indicator */}
         <div className="absolute bottom-8 left-1/2 z-10 -translate-x-1/2">
-          <div
-            className="flex flex-col items-center gap-2"
-            style={{ color: "rgba(235,225,210,0.4)" }}
-          >
+          <div className="flex flex-col items-center gap-2 text-foreground/40">
             <span className="text-[10px] tracking-[0.3em] uppercase">Scroll</span>
-            <div className="h-8 w-px animate-pulse" style={{ backgroundColor: "rgba(235,225,210,0.3)" }} />
+            <div className="h-8 w-px animate-pulse bg-primary/30" />
           </div>
-        </div>
-      </section>
-
-      {/* ── Intro Section ────────────────────────────────────── */}
-      <section className="bg-background">
-        <div className="mx-auto flex max-w-4xl flex-col items-center px-6 py-24 text-center sm:py-32 md:py-40">
-          {/* Decorative element */}
-          <div className="mb-10 flex items-center gap-4">
-            <div className="h-px w-8 bg-border" />
-            <span className="text-[10px] tracking-[0.4em] uppercase text-muted-foreground">
-              Est. 2024
-            </span>
-            <div className="h-px w-8 bg-border" />
-          </div>
-
-          <h2 className="text-2xl leading-snug tracking-tight sm:text-3xl md:text-4xl">
-            A Retreat Designed for Stillness
-          </h2>
-
-          <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Nestled between lush tropical landscapes and clean architectural lines,
-            Grand Raya Hotel offers an intimate escape where every detail has been
-            considered. Our rooms blend natural materials with modern comfort,
-            creating spaces that feel both grounding and elevated.
-          </p>
-
-          <p className="mt-4 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Whether you seek quiet reflection by the pool or the vibrant culture of
-            the surrounding area, Grand Raya is your home away from home.
-          </p>
-
-          {/* Secondary CTA */}
-          <Link
-            href="/rooms"
-            className="mt-12 inline-flex items-center gap-3 border border-primary px-8 py-3.5 text-xs tracking-[0.25em] uppercase text-primary transition-all duration-500 hover:bg-primary hover:text-primary-foreground"
-            id="explore-rooms-cta"
-          >
-            Explore Our Rooms
-            <span className="inline-block transition-transform duration-500 group-hover:translate-x-1">
-              →
-            </span>
-          </Link>
         </div>
       </section>
 
       {/* ── Featured Rooms ───────────────────────────────────── */}
       {featuredRooms.length > 0 && (
-        <section className="bg-muted/30">
+        <section id="rooms" className="bg-muted/30">
           <div className="mx-auto max-w-6xl px-6 py-20 sm:py-28">
             {/* Section header */}
             <div className="mb-14 flex flex-col items-center text-center">
               <div className="mb-6 flex items-center gap-4">
-                <div className="h-px w-8 bg-border" />
+                <div className="h-px w-8 bg-primary/30" />
                 <span className="text-[10px] tracking-[0.4em] uppercase text-muted-foreground">
                   Accommodations
                 </span>
-                <div className="h-px w-8 bg-border" />
+                <div className="h-px w-8 bg-primary/30" />
               </div>
-              <h2
-                className="text-2xl tracking-tight sm:text-3xl md:text-4xl"
-                style={{ fontFamily: "var(--font-heading)", fontWeight: 400 }}
-              >
+              <h2 className="text-2xl tracking-tight sm:text-3xl md:text-4xl">
                 Featured Rooms
               </h2>
               <p className="mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
@@ -237,7 +163,6 @@ export default async function HomePage() {
                 const price = Number(room.basePrice);
                 const isAvailable = room.rooms.length > 0;
 
-                // Spec row: size from amenities or omit, capacity, bed type from title
                 const specItems: { label: string; value: string }[] = [
                   {
                     label: "Capacity",
@@ -249,7 +174,6 @@ export default async function HomePage() {
                   },
                 ];
 
-                // Surface a few amenities as a readable spec
                 const firstAmenities = room.amenities
                   .slice(0, 3)
                   .map((a) => AMENITY_LABELS[a] ?? a)
@@ -259,31 +183,23 @@ export default async function HomePage() {
                   <Link
                     key={room.id}
                     href={`/rooms/${room.id}`}
-                    className="group flex flex-col bg-background transition-colors duration-300 hover:bg-muted/50"
+                    className="group flex flex-col border border-border bg-card transition-all duration-300 hover:border-primary/40 hover:shadow-md"
                   >
-                    {/* Top accent bar */}
-                    <div className="h-px w-full bg-border transition-colors duration-300 group-hover:bg-primary/40" />
-
                     <div className="flex flex-1 flex-col p-7">
-                      {/* Availability dot */}
-                      <div className="mb-5 flex items-center gap-2">
+                      {/* Availability dot + badge */}
+                      <div className="mb-5 flex items-center gap-3">
                         <span
                           className={`inline-block h-1.5 w-1.5 rounded-full ${
-                            isAvailable ? "bg-primary" : "bg-muted-foreground/40"
+                            isAvailable ? "bg-secondary" : "bg-muted-foreground/40"
                           }`}
                         />
-                        <span className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground">
+                        <span className="rounded-full bg-secondary/10 px-2.5 py-0.5 text-[10px] font-medium tracking-wider uppercase text-secondary">
                           {isAvailable ? "Available" : "Ask for availability"}
                         </span>
                       </div>
 
                       {/* Title */}
-                      <h3
-                        className="text-xl tracking-tight"
-                        style={{ fontFamily: "var(--font-heading)", fontWeight: 400 }}
-                      >
-                        {room.title}
-                      </h3>
+                      <h3 className="text-xl tracking-tight">{room.title}</h3>
 
                       {/* Description */}
                       <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
@@ -327,7 +243,7 @@ export default async function HomePage() {
             <div className="mt-12 text-center">
               <Link
                 href="/rooms"
-                className="inline-flex items-center gap-3 border border-primary px-8 py-3.5 text-xs tracking-[0.25em] uppercase text-primary transition-all duration-500 hover:bg-primary hover:text-primary-foreground"
+                className="inline-flex items-center gap-3 border border-primary px-8 py-3.5 text-xs font-medium tracking-[0.25em] uppercase text-primary transition-all duration-500 hover:bg-primary hover:text-primary-foreground"
               >
                 View All Rooms
                 <span>→</span>
@@ -337,23 +253,57 @@ export default async function HomePage() {
         </section>
       )}
 
+      {/* ── Amenities ────────────────────────────────────────── */}
+      <section id="amenities" className="bg-background">
+        <div className="mx-auto max-w-6xl px-6 py-20 sm:py-28">
+          {/* Section header */}
+          <div className="mb-14 flex flex-col items-center text-center">
+            <div className="mb-6 flex items-center gap-4">
+              <div className="h-px w-8 bg-primary/30" />
+              <span className="text-[10px] tracking-[0.4em] uppercase text-muted-foreground">
+                Experiences
+              </span>
+              <div className="h-px w-8 bg-primary/30" />
+            </div>
+            <h2 className="text-2xl tracking-tight sm:text-3xl md:text-4xl">
+              Hotel Amenities
+            </h2>
+            <p className="mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
+              Everything you need for an unforgettable stay.
+            </p>
+          </div>
+
+          {/* Icon grid */}
+          <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
+            {HOTEL_AMENITIES.map((amenity) => (
+              <div
+                key={amenity.label}
+                className="flex flex-col items-center gap-4 rounded-lg border border-border p-8 text-center transition-all duration-300 hover:border-primary/40 hover:shadow-sm"
+              >
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                  <amenity.icon className="h-6 w-6 text-primary" />
+                </div>
+                <span className="text-sm font-medium text-foreground">{amenity.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── Guest Reviews ────────────────────────────────────── */}
       {topReviews.length > 0 && (
-        <section className="bg-background">
+        <section className="bg-muted/30">
           <div className="mx-auto max-w-6xl px-6 py-20 sm:py-28">
             {/* Section header */}
             <div className="mb-14 flex flex-col items-center text-center">
               <div className="mb-6 flex items-center gap-4">
-                <div className="h-px w-8 bg-border" />
+                <div className="h-px w-8 bg-primary/30" />
                 <span className="text-[10px] tracking-[0.4em] uppercase text-muted-foreground">
                   Guest Voices
                 </span>
-                <div className="h-px w-8 bg-border" />
+                <div className="h-px w-8 bg-primary/30" />
               </div>
-              <h2
-                className="text-2xl tracking-tight sm:text-3xl md:text-4xl"
-                style={{ fontFamily: "var(--font-heading)", fontWeight: 400 }}
-              >
+              <h2 className="text-2xl tracking-tight sm:text-3xl md:text-4xl">
                 What Our Guests Say
               </h2>
             </div>
@@ -362,7 +312,6 @@ export default async function HomePage() {
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {topReviews.map((review) => {
                 const guestName = review.booking.guest.name;
-                // Show first name + last initial for privacy
                 const parts = guestName.trim().split(" ");
                 const displayName =
                   parts.length > 1
@@ -374,7 +323,7 @@ export default async function HomePage() {
                 return (
                   <div
                     key={review.id}
-                    className="flex flex-col bg-muted/30 p-6"
+                    className="flex flex-col border border-border bg-card p-6 transition-all duration-300 hover:shadow-sm"
                   >
                     {/* Stars */}
                     <div className="mb-4 flex items-center gap-0.5">
@@ -410,18 +359,145 @@ export default async function HomePage() {
         </section>
       )}
 
+      {/* ── Contact ───────────────────────────────────────────── */}
+      <section id="contact" className="bg-background">
+        <div className="mx-auto max-w-6xl px-6 py-20 sm:py-28">
+          <div className="grid gap-12 md:grid-cols-2">
+            {/* Left — Info */}
+            <div>
+              <div className="mb-6 flex items-center gap-4">
+                <div className="h-px w-8 bg-primary/30" />
+                <span className="text-[10px] tracking-[0.4em] uppercase text-muted-foreground">
+                  Get in Touch
+                </span>
+              </div>
+              <h2 className="text-2xl tracking-tight sm:text-3xl md:text-4xl">
+                Contact Us
+              </h2>
+              <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
+                We would love to hear from you. Reach out for reservations, inquiries, or special requests.
+              </p>
+
+              <div className="mt-8 space-y-5">
+                <div>
+                  <p className="text-[11px] tracking-[0.15em] uppercase text-muted-foreground">Address</p>
+                  <p className="mt-1 text-sm text-foreground">
+                    {property?.address ?? "123 Grand Avenue, City Center"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[11px] tracking-[0.15em] uppercase text-muted-foreground">Phone</p>
+                  <p className="mt-1 text-sm text-foreground">+1 (555) 234-5678</p>
+                </div>
+                <div>
+                  <p className="text-[11px] tracking-[0.15em] uppercase text-muted-foreground">Email</p>
+                  <p className="mt-1 text-sm text-foreground">reservations@grandraya.com</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Right — Location graphic */}
+            <div className="flex items-center justify-center">
+              <div className="flex h-64 w-full flex-col items-center justify-center rounded-lg border border-border bg-muted/30 p-8 text-center">
+                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                  <svg
+                    className="h-8 w-8 text-primary"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"
+                    />
+                  </svg>
+                </div>
+                <p className="text-sm font-medium text-foreground">
+                  {property?.name ?? "Grand Raya Hotel"}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {property?.address ?? "123 Grand Avenue, City Center"}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── Footer ───────────────────────────────────────────── */}
-      <footer className="border-t border-border bg-background">
-        <div className="mx-auto flex max-w-4xl flex-col items-center gap-4 px-6 py-10 text-center sm:flex-row sm:justify-between sm:text-left">
-          <span
-            className="text-sm tracking-[0.2em] uppercase"
-            style={{ fontFamily: "var(--font-heading)" }}
-          >
-            Grand Raya Hotel
-          </span>
-          <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} Grand Raya Hotel. All rights reserved.
-          </p>
+      <footer className="border-t border-border bg-muted/30">
+        <div className="mx-auto max-w-6xl px-6 py-12">
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            {/* Brand */}
+            <div className="sm:col-span-2 lg:col-span-1">
+              <span className="font-heading text-lg tracking-tight">Grand Raya Hotel</span>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                A warm luxury resort where every detail has been considered.
+              </p>
+            </div>
+
+            {/* Quick links */}
+            <div>
+              <p className="text-[11px] font-medium tracking-[0.15em] uppercase text-foreground">
+                Quick Links
+              </p>
+              <ul className="mt-3 space-y-2">
+                {[
+                  { label: "Home", href: "#top" },
+                  { label: "Rooms", href: "#rooms" },
+                  { label: "Amenities", href: "#amenities" },
+                  { label: "Contact", href: "#contact" },
+                ].map((link) => (
+                  <li key={link.href}>
+                    <a
+                      href={link.href}
+                      className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      {link.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Contact */}
+            <div>
+              <p className="text-[11px] font-medium tracking-[0.15em] uppercase text-foreground">
+                Contact
+              </p>
+              <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+                <li>{property?.address ?? "123 Grand Avenue, City Center"}</li>
+                <li>+1 (555) 234-5678</li>
+                <li>reservations@grandraya.com</li>
+              </ul>
+            </div>
+
+            {/* Hours */}
+            <div>
+              <p className="text-[11px] font-medium tracking-[0.15em] uppercase text-foreground">
+                Front Desk
+              </p>
+              <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+                <li>Open 24 hours</li>
+                <li>Concierge available</li>
+                <li>Early check-in on request</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Copyright */}
+          <div className="mt-10 border-t border-border pt-6 text-center">
+            <p className="text-xs text-muted-foreground">
+              &copy; {new Date().getFullYear()} Grand Raya Hotel. All rights reserved.
+            </p>
+          </div>
         </div>
       </footer>
     </div>

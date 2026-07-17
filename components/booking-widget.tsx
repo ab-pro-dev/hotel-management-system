@@ -45,17 +45,11 @@ export default function BookingWidget() {
       onSubmit={handleSubmit}
       className="mx-auto mt-10 w-full max-w-3xl"
     >
-      <div
-        className="flex flex-col gap-0 sm:flex-row"
-        style={{ backgroundColor: "rgba(20,16,12,0.55)", backdropFilter: "blur(12px)" }}
-      >
+      <div className="flex flex-col gap-0 sm:flex-row rounded-lg border border-primary/20 bg-background/90 backdrop-blur-md shadow-lg">
         {/* Check-in */}
-        <label className="group flex flex-1 flex-col gap-1 border-b border-white/10 px-5 py-4 sm:border-b-0 sm:border-r">
-          <span
-            className="flex items-center gap-1.5 text-[10px] tracking-[0.25em] uppercase"
-            style={{ color: "rgba(235,225,210,0.5)" }}
-          >
-            <CalendarDays className="h-3 w-3" />
+        <label className="group flex flex-1 flex-col gap-1 border-b border-border px-5 py-4 sm:border-b-0 sm:border-r">
+          <span className="flex items-center gap-1.5 text-[10px] tracking-[0.25em] uppercase text-muted-foreground">
+            <CalendarDays className="h-3 w-3 text-primary" />
             Check-in
           </span>
           <input
@@ -64,21 +58,14 @@ export default function BookingWidget() {
             min={today}
             onChange={(e) => handleCheckInChange(e.target.value)}
             required
-            className="w-full bg-transparent text-sm focus:outline-none"
-            style={{
-              color: "rgba(245,240,230,0.9)",
-              colorScheme: "dark",
-            }}
+            className="w-full bg-transparent text-sm text-foreground focus:outline-none"
           />
         </label>
 
         {/* Check-out */}
-        <label className="group flex flex-1 flex-col gap-1 border-b border-white/10 px-5 py-4 sm:border-b-0 sm:border-r">
-          <span
-            className="flex items-center gap-1.5 text-[10px] tracking-[0.25em] uppercase"
-            style={{ color: "rgba(235,225,210,0.5)" }}
-          >
-            <CalendarDays className="h-3 w-3" />
+        <label className="group flex flex-1 flex-col gap-1 border-b border-border px-5 py-4 sm:border-b-0 sm:border-r">
+          <span className="flex items-center gap-1.5 text-[10px] tracking-[0.25em] uppercase text-muted-foreground">
+            <CalendarDays className="h-3 w-3 text-primary" />
             Check-out
           </span>
           <input
@@ -87,21 +74,14 @@ export default function BookingWidget() {
             min={checkIn}
             onChange={(e) => setCheckOut(e.target.value)}
             required
-            className="w-full bg-transparent text-sm focus:outline-none"
-            style={{
-              color: "rgba(245,240,230,0.9)",
-              colorScheme: "dark",
-            }}
+            className="w-full bg-transparent text-sm text-foreground focus:outline-none"
           />
         </label>
 
         {/* Guests */}
-        <label className="group flex flex-1 flex-col gap-1 border-b border-white/10 px-5 py-4 sm:border-b-0 sm:border-r">
-          <span
-            className="flex items-center gap-1.5 text-[10px] tracking-[0.25em] uppercase"
-            style={{ color: "rgba(235,225,210,0.5)" }}
-          >
-            <Users className="h-3 w-3" />
+        <label className="group flex flex-1 flex-col gap-1 border-b border-border px-5 py-4 sm:border-b-0 sm:border-r">
+          <span className="flex items-center gap-1.5 text-[10px] tracking-[0.25em] uppercase text-muted-foreground">
+            <Users className="h-3 w-3 text-primary" />
             Guests
           </span>
           <input
@@ -110,15 +90,14 @@ export default function BookingWidget() {
             min={1}
             max={10}
             onChange={(e) => setGuests(Math.max(1, parseInt(e.target.value) || 1))}
-            className="w-full bg-transparent text-sm focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-            style={{ color: "rgba(245,240,230,0.9)" }}
+            className="w-full bg-transparent text-sm text-foreground focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
           />
         </label>
 
         {/* Submit */}
         <button
           type="submit"
-          className="bg-primary px-8 py-4 text-xs tracking-[0.25em] uppercase text-primary-foreground transition-all duration-300 hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+          className="bg-primary px-8 py-4 text-xs font-medium tracking-[0.25em] uppercase text-primary-foreground transition-all duration-300 hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
         >
           Check Availability
         </button>

@@ -1,19 +1,26 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Playfair_Display, Jost } from "next/font/google";
 import Providers from "@/components/session-provider";
 import ThemeProvider from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-sans",
+const playfair = Playfair_Display({
+  variable: "--font-heading",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
 });
 
+const jost = Jost({
+  variable: "--font-sans",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+});
+
 export const metadata: Metadata = {
-  title: "Grand Raya Hotel",
-  description: "Boutique hotel booking and management",
+  title: "Grand Raya Hotel — Warm Luxury Resort",
+  description:
+    "Experience warm, refined elegance at Grand Raya Hotel. Lush surroundings, burnished gold accents, and impeccable hospitality.",
 };
 
 export default function RootLayout({
@@ -24,7 +31,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} h-full antialiased`}
+      className={`${playfair.variable} ${jost.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">

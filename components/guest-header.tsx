@@ -34,6 +34,10 @@ export default function GuestHeader() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Hide on homepage — it has its own sticky navbar
+  const isHomepage = pathname === `/${locale}` || pathname === `/${locale}/`;
+  if (isHomepage) return null;
+
   function switchLocale(nextLocale: string) {
     router.replace(pathname, { locale: nextLocale });
     setOpen(false);
