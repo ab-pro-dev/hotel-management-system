@@ -17,10 +17,8 @@ export default async function StaffLayout({
 
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
-      <div className="min-h-screen">
-        <ConditionalStaffHeader />
-        <main className="mx-auto max-w-7xl px-4 py-6">{children}</main>
-      </div>
+      <ConditionalStaffHeader />
+      <main>{children}</main>
     </NextIntlClientProvider>
   );
 }

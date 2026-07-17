@@ -17,10 +17,8 @@ export default async function GuestLayout({
 
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
-      <div className="min-h-screen">
-        <GuestHeader />
-        <main className="mx-auto max-w-7xl px-4 py-6">{children}</main>
-      </div>
+      <GuestHeader />
+      <main>{children}</main>
     </NextIntlClientProvider>
   );
 }
