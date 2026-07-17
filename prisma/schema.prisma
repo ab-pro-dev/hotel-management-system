@@ -203,8 +203,8 @@ model Waitlist {
 
 model AuditLog {
   id         String   @id @default(cuid())
-  user       User     @relation(fields: [userId], references: [id])
-  userId     String
+  user       User?    @relation(fields: [userId], references: [id])
+  userId     String?
   action     String
   targetTable String
   targetId   String

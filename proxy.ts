@@ -30,9 +30,28 @@ const ratelimit = process.env.UPSTASH_REDIS_REST_URL
     })
   : null;
 
+const staffLoginRatelimit = process.env.UPSTASH_REDIS_REST_URL
+  ? new Ratelimit({
+      redis: Redis.fromEnv(),
+      limiter: Ratelimit.slidingWindow(5, "1 h"),
+      analytics: true,
+    })
+  : null;
+
 async function rateLimit(ip: string) {
   if (!ratelimit) return { success: true, limit: 10, remaining: 10, reset: Date.now() + 60000 };
   return ratelimit.limit(ip);
+}
+
+async function staffLoginRateLimit(ip: string) {
+  if (!staffLoginRatelimit) return { success: true, limit: 5, remaining: 5, reset: Date.now() + 3600000 };
+  return staffLoginRatelimit.limit(`staff-login:${ip}`);
+}
+
+function getClientIp(req: Request): string {
+  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+    ?? req.headers.get("x-real-ip")
+    ?? "127.0.0.1";
 }
 
 const i18nMiddleware = async (req: Request, locale: string) => {
@@ -57,11 +76,9 @@ export default auth(async (req) => {
 
   const pathnameWithoutLocale = pathname.replace(/^\/(en|am)(\/|$)/, "/") || "/";
 
+  // General rate limit for /login and /book
   if (pathnameWithoutLocale.startsWith("/login") || pathnameWithoutLocale.startsWith("/book")) {
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
-      ?? req.headers.get("x-real-ip")
-      ?? "127.0.0.1";
-
+    const ip = getClientIp(req);
     const { success, reset } = await rateLimit(ip);
 
     if (!success) {
@@ -76,6 +93,30 @@ export default auth(async (req) => {
           headers: {
             "Retry-After": String(retryAfter),
             "X-RateLimit-Limit": "10",
+            "X-RateLimit-Remaining": "0",
+          },
+        }
+      );
+    }
+  }
+
+  // Stricter rate limit for /staff-login page loads: 5 per hour per IP
+  if (pathnameWithoutLocale.startsWith("/staff-login")) {
+    const ip = getClientIp(req);
+    const { success, reset } = await staffLoginRateLimit(ip);
+
+    if (!success) {
+      const retryAfter = Math.ceil((reset - Date.now()) / 1000);
+      return NextResponse.json(
+        {
+          error: "Too many login attempts. Please try again later.",
+          retryAfter,
+        },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(retryAfter),
+            "X-RateLimit-Limit": "5",
             "X-RateLimit-Remaining": "0",
           },
         }

@@ -65,7 +65,7 @@ export default async function AuditLogPage({ params }: { params: Promise<{ local
                     </Badge>
                     <Badge variant="secondary">{log.targetTable}</Badge>
                     <span className="text-xs text-muted-foreground font-mono">{log.targetId.slice(0, 8)}</span>
-                    <span className="text-sm font-medium">{log.user.name}</span>
+                    <span className="text-sm font-medium">{log.user?.name ?? "System"}</span>
                   </div>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground">
                     {log.metadata && typeof log.metadata === "object" && Object.keys(log.metadata).length > 0 && (

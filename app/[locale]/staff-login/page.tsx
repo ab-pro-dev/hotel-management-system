@@ -34,26 +34,43 @@ function StaffLoginForm() {
     setLoading(true);
 
     try {
-      const result = await signIn("credentials", {
+      // POST to custom endpoint — rate limited + audit logged
+      const res = await fetch("/api/auth/staff-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Invalid email or password");
+        return;
+      }
+
+      // Login succeeded — establish session via NextAuth signIn
+      const signInResult = await signIn("credentials", {
         email,
         password,
         redirect: false,
       });
 
-      if (result?.error) {
+      if (signInResult?.error) {
         setError("Invalid email or password");
-      } else {
-        if (callbackUrl) {
-          router.push(callbackUrl);
-        } else {
-          const sessionRes = await fetch("/api/auth/session");
-          const session = await sessionRes.json();
-          const role = session?.user?.role;
-          const redirectPath = ROLE_REDIRECTS[role] || "/dashboard";
-          i18nRouter.push(redirectPath as "/dashboard" | "/admin/analytics" | "/reception" | "/housekeeping");
-        }
-        router.refresh();
+        return;
       }
+
+      // Determine redirect destination
+      if (callbackUrl) {
+        router.push(callbackUrl);
+      } else {
+        const sessionRes = await fetch("/api/auth/session");
+        const session = await sessionRes.json();
+        const role = session?.user?.role;
+        const redirectPath = ROLE_REDIRECTS[role] || "/dashboard";
+        i18nRouter.push(redirectPath as "/dashboard" | "/admin/analytics" | "/reception" | "/housekeeping");
+      }
+      router.refresh();
     } catch {
       setError("Invalid email or password");
     } finally {
