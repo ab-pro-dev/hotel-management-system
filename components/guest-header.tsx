@@ -6,7 +6,7 @@ import { Link } from "@/i18n/navigation";
 import { useSession } from "next-auth/react";
 import NotificationBell from "@/components/notification-bell";
 import { Button } from "@/components/ui/button";
-import { Globe } from "lucide-react";
+import { Globe, User } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
 const LOCALES = [
@@ -73,6 +73,17 @@ export default function GuestHeader() {
           {role === "HOUSEKEEPER" && (
             <Link href="/housekeeping" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
               {t("nav.housekeeping")}
+            </Link>
+          )}
+
+          {!session && (
+            <Link
+              href="/login"
+              className="flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+              aria-label="Sign in"
+            >
+              <User className="h-4 w-4" />
+              <span className="hidden sm:inline">{t("nav.signIn")}</span>
             </Link>
           )}
 
