@@ -10,44 +10,44 @@ const actions = [
     description: "Create a new room",
     href: "/admin/manage",
     icon: Plus,
-    color: "bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400",
+    iconBg: "bg-blue-500",
   },
   {
     title: "New Booking",
     description: "Create a new booking",
     href: "/admin/bookings",
     icon: CalendarPlus,
-    color: "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400",
+    iconBg: "bg-emerald-500",
   },
   {
     title: "Manage Reviews",
     description: "View and reply reviews",
     href: "/admin/reviews",
     icon: Star,
-    color: "bg-purple-500/10 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400",
+    iconBg: "bg-purple-500",
   },
   {
     title: "View Payments",
     description: "Check all transactions",
     href: "/admin/payments",
     icon: CreditCard,
-    color: "bg-orange-500/10 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400",
+    iconBg: "bg-amber-500",
   },
 ];
 
 export default function QuickActions() {
   return (
     <div>
-      <h3 className="text-base font-semibold mb-3">Quick Actions</h3>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <h3 className="text-base font-semibold mb-4">Quick Actions</h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {actions.map((action) => (
           <Link key={action.title} href={action.href}>
-            <Card className="rounded-xl shadow-sm border-0 bg-card transition-colors hover:bg-accent/50 cursor-pointer h-full">
-              <CardContent className="p-4">
-                <div className={`flex h-10 w-10 items-center justify-center rounded-full ${action.color} mb-3`}>
+            <Card className="rounded-xl border border-border/60 bg-card shadow-sm transition-all hover:shadow-md hover:border-primary/20 cursor-pointer h-full">
+              <CardContent className="p-5 flex flex-col items-center text-center">
+                <div className={`flex h-12 w-12 items-center justify-center rounded-full ${action.iconBg} text-white mb-3 shadow-sm`}>
                   <action.icon className="h-5 w-5" />
                 </div>
-                <p className="text-sm font-semibold mb-0.5">{action.title}</p>
+                <p className="text-sm font-semibold mb-1">{action.title}</p>
                 <p className="text-xs text-muted-foreground">{action.description}</p>
               </CardContent>
             </Card>

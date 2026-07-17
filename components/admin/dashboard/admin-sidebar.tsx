@@ -39,9 +39,9 @@ export default function AdminSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
-      <SidebarHeader className="p-4">
+      <SidebarHeader className="p-4 pb-2">
         <Link href="/admin" className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
             <Crown className="h-5 w-5" />
           </div>
           <div className="group-data-[collapsible=icon]:hidden">
@@ -56,7 +56,7 @@ export default function AdminSidebar() {
       <SidebarSeparator />
 
       <SidebarContent className="px-2 py-2">
-        <SidebarMenu>
+        <SidebarMenu className="gap-0.5">
           {navItems.map((item) => {
             const isActive =
               item.href === "/admin"
@@ -68,10 +68,11 @@ export default function AdminSidebar() {
                 <SidebarMenuButton
                   isActive={isActive}
                   tooltip={item.label}
+                  size="lg"
                   className={
                     isActive
-                      ? "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:text-primary-foreground"
-                      : ""
+                      ? "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:text-primary-foreground font-medium"
+                      : "text-muted-foreground hover:text-foreground"
                   }
                   render={
                     <Link
@@ -92,15 +93,15 @@ export default function AdminSidebar() {
       <SidebarSeparator />
 
       <SidebarFooter className="p-3">
-        <div className="rounded-xl bg-primary/5 p-4 group-data-[collapsible=icon]:hidden">
+        <div className="rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-500/10 dark:to-indigo-500/10 p-4 group-data-[collapsible=icon]:hidden border border-blue-100 dark:border-blue-500/20">
           <div className="flex items-center gap-2 mb-2">
             <Crown className="h-4 w-4 text-primary" />
             <p className="text-sm font-semibold">Upgrade to Pro</p>
           </div>
           <p className="mb-3 text-xs text-muted-foreground leading-relaxed">
-            Get advanced analytics, priority support, and more features.
+            Unlock more features & boost your hotel growth.
           </p>
-          <Button size="sm" className="w-full text-xs">
+          <Button size="sm" className="w-full text-xs font-medium rounded-lg">
             Upgrade Now
           </Button>
         </div>

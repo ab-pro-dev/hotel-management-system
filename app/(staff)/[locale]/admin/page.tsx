@@ -41,8 +41,8 @@ export default async function AdminPage({
             Here&apos;s what&apos;s happening in your hotel today.
           </p>
         </div>
-        <Button variant="outline" size="sm" className="gap-2 w-fit rounded-full">
-          <CalendarDays className="h-3.5 w-3.5" />
+        <Button variant="outline" size="sm" className="gap-2 w-fit rounded-full border-border/60 text-sm font-medium">
+          <CalendarDays className="h-4 w-4" />
           Today, {today}
         </Button>
       </div>

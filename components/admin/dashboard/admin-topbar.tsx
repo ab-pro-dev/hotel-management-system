@@ -35,20 +35,21 @@ export default function AdminTopbar() {
       <SidebarTrigger className="md:hidden" />
 
       <div className="relative flex-1 max-w-md">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           placeholder="Search anything..."
-          className="h-10 rounded-full bg-muted pl-10 border-0 focus-visible:ring-1 focus-visible:ring-primary"
+          className="h-10 rounded-full bg-muted pl-4 pr-10 border-0 focus-visible:ring-1 focus-visible:ring-primary"
         />
+        <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         <NotificationBell />
 
         <Button
           variant="ghost"
           size="icon-sm"
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          className="text-muted-foreground hover:text-foreground"
         >
           <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
           <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
@@ -56,12 +57,14 @@ export default function AdminTopbar() {
         </Button>
 
         <DropdownMenu>
-          <DropdownMenuTrigger render={<Button variant="ghost" size="sm" className="gap-2" />}>
-            <Avatar size="sm">
-              <AvatarFallback>{initials}</AvatarFallback>
+          <DropdownMenuTrigger render={<Button variant="ghost" size="sm" className="gap-2 h-9 px-2" />}>
+            <Avatar size="default">
+              <AvatarFallback className="text-xs font-medium bg-primary/10 text-primary">
+                {initials}
+              </AvatarFallback>
             </Avatar>
             <div className="hidden text-left md:block">
-              <p className="text-sm font-medium leading-tight">
+              <p className="text-sm font-semibold leading-tight">
                 {session?.user?.name ?? "Admin"}
               </p>
               <p className="text-xs text-muted-foreground">Administrator</p>
