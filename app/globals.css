@@ -193,18 +193,3 @@ section:first-child p {
 section:first-child form {
   animation: hero-fade-in 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.7s both;
 }
-
-/* ── NProgress bar overrides ────────────────────────── */
-
-#nprogress .bar {
-  background: #C9A063;
-  height: 3px;
-}
-
-#nprogress .peg {
-  box-shadow: 0 0 10px #C9A063, 0 0 5px #C9A063;
-}
-
-#nprogress .spinner-icon {
-  display: none;
-}
