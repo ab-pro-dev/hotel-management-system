@@ -77,8 +77,8 @@ export default function GuestHeader() {
           {!isMobile && (
             <>
               <Button
-                variant="outline"
-                className="border-cream/30 text-cream hover:bg-cream/10 hover:text-gold"
+                variant="ghost"
+                className="text-cream hover:bg-white/10 hover:text-gold"
                 size="sm"
               >
                 Sign In
@@ -120,8 +120,8 @@ export default function GuestHeader() {
                 </nav>
                 <div className="flex flex-col gap-3 border-t border-white/10 p-4">
                   <Button
-                    variant="outline"
-                    className="w-full border-cream/30 text-cream"
+                    variant="ghost"
+                    className="w-full text-cream hover:bg-white/10 hover:text-gold"
                   >
                     Sign In
                   </Button>
