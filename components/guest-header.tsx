@@ -15,12 +15,12 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 const navLinks = [
   { label: "Home", href: "/" },
-  { label: "Rooms & Suites", href: "#rooms" },
-  { label: "Amenities", href: "#amenities" },
-  { label: "Dining", href: "#dining" },
-  { label: "Gallery", href: "#gallery" },
-  { label: "About Us", href: "#about" },
-  { label: "Contact", href: "#contact" },
+  { label: "Rooms & Suites", href: "/rooms" },
+  { label: "Amenities", href: "/amenities" },
+  { label: "Dining", href: "/dining" },
+  { label: "Gallery", href: "/gallery" },
+  { label: "About Us", href: "/about" },
+  { label: "Contact", href: "/contact" },
 ];
 
 export default function GuestHeader() {
